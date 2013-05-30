@@ -10,10 +10,17 @@ class Request
     protected $params;
     protected $protocol;
     protected $protocolVersion;
+    protected $headerLine=[];
 
     public function __construct($rawHeader) {
         $headerLines = explode("\r\n", $rawHeader);
         $this->parseMethod($headerLines[0]);
+    }
+
+    protected function parseHeaderLine($line)
+    {
+        list($headerField, $content) = explode(':', $line);
+        $this->headerLine[trim(strtolower($headerField))] = trim($content);
     }
 
     protected function parseMethod($line)
@@ -28,6 +35,17 @@ class Request
             list($this->doc, $params) = explode('?', $this->uri);
             parse_str($params, $this->params);
         }
+    }
+
+    public function __call($name, $arguments) {
+        if(strtolower(substr($name, 0, 3))!='get'){
+            return null;
+        }
+        $field = strtolower(substr($name, 0, 3));
+        if(!isset($this->headerLine[$field])){
+            return null;
+        }
+        return $this->headerLine[$field];
     }
 
     public function getMethod()
