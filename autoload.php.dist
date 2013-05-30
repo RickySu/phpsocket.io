@@ -1,0 +1,8 @@
+<?php
+$VendorPath=__DIR__.'/vendor';
+if(!is_dir($VendorPath)){
+    $VendorPath=__DIR__.'/../../../../../vendor';
+}
+$loader=include "$VendorPath/autoload.php";
+$loader->add('PHPSocketIO', __DIR__ . '/src');
+return $loader;

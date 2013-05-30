@@ -1,0 +1,5 @@
+{
+    "name": "rickysu/php-socketio",
+    "homepage": "http://github.com/rickysu/php-socketio/",
+    "autoload": { "psr-0": { "PHPSocketIO": "src" } }
+}
