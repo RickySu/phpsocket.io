@@ -4,11 +4,17 @@ namespace PHPSocketIO;
 class Connection
 {
     const READ_BUFFER_SIZE = 1024;
+    const STOP_EVENT_PROPAGATE = 'STOP';
+    const EVENT_HTTP_REQUEST= 'http.request';
     protected $address;
     protected $baseEvent;
     protected $socket;
     protected $eventBufferEvent;
     protected $shutdownAfterSend = false;
+
+    protected $events;
+
+    protected $namespace;
 
     /**
      *
@@ -16,13 +22,23 @@ class Connection
      */
     protected $protocolProcessor;
 
-    public function __construct(\EventBase $baseEvent, $socket, $address)
+    public function __construct(\EventBase $baseEvent, $socket, $address, $namespace)
     {
         $this->baseEvent = $baseEvent;
         $this->socket = $socket;
         $this->address = $address;
+        $this->namespace = $namespace;
         $this->setProtocolProcessor(new Adapter\Http($this));
         $this->prepareEvent();
+        $this->prepareHandshake();
+    }
+
+    public function getNamespace(){
+        return $this->namespace;
+    }
+    protected function prepareHandshake()
+    {
+        $this->on(self::EVENT_HTTP_REQUEST, array(new Handshake(), 'onRequest'));
     }
 
     public function setProtocolProcessor(Adapter\ProtocolProcessorInterface $processor)
@@ -54,21 +70,13 @@ class Connection
     protected function onReceive(\EventBufferEvent $eventBufferEvent, $arg)
     {
         $receiveMessage = $eventBufferEvent->input->read(self::READ_BUFFER_SIZE);
-/*        $message = "test".rand();
-        $Header  = "HTTP/1.0 200 OK\r\n";
-        $Header .= "Server: noname\r\n";
-        $Header .= "Content-Length: ".strlen($message)."\r\n";
-        $Header .= "Connection: close\r\n";
-        $Header .= "Content-Type: text/plain\r\n\r\n";
-        $Header .= $message;
-        $eventBufferEvent->write($Header);
-        $this->shutdownAfterSend = true;*/
         $this->protocolProcessor->onReceive($receiveMessage);
     }
 
     public function write($message, $shutdownAfterSend = false)
     {
         $this->eventBufferEvent->write($message);
+        $this->shutdownAfterSend = $shutdownAfterSend;
     }
 
     protected function onWriteBufferEmpty(\EventBufferEvent $eventBufferEvent, $arg)
@@ -90,6 +98,25 @@ class Connection
         $this->baseEvent = null;
         $this->socket = null;
         $this->protocolProcessor = null;
+        $this->events = null;
+    }
+
+    public function on($event, $callback)
+    {
+        $this->events[$event][] = $callback;
+    }
+
+    public function trigger($event, Connection $connection, $data)
+    {
+        if(!isset($this->events[$event])){
+            return;
+        }
+
+        foreach($this->events[$event] as $callback){
+            if(call_user_func($callback, $connection, $data) === self::STOP_EVENT_PROPAGATE){
+                break;
+            }
+        }
     }
 
     public function __destruct()

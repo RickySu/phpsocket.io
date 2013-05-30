@@ -10,6 +10,8 @@ class SocketIO
 
     protected $onConnectCallbacks = [];
 
+    protected $namespace = 'socket.io';
+
     public function __construct(\EventBase $baseEvent = null)
     {
         if ($baseEvent === null) {
@@ -58,7 +60,7 @@ class SocketIO
 
     protected function doAccept(\EventListener $eventListener, $socket, $address, $ctx)
     {
-        $connection = new Connection($this->baseEvent, $socket, $address);
+        $connection = new Connection($this->baseEvent, $socket, $address, $this->namespace);
         foreach ($this->onConnectCallbacks as $onConnectCallback) {
             call_user_func($onConnectCallback, $connection);
         }

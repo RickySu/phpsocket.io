@@ -3,17 +3,20 @@
 namespace PHPSocketIO\Adapter;
 
 use PHPSocketIO\Connection;
-use PHPSocketIO\HTTPHeader;
 
 class Http implements ProtocolProcessorInterface
 {
     protected $rawHeader='';
+    /**
+     *
+     * @var HTTP\Request
+     */
     protected $header;
     protected $connection;
 
     protected function parseHeader($rawHeader)
     {
-        return new HTTPHeader\Request($rawHeader);
+        return new HTTP\Request($rawHeader);
     }
 
     protected function appendRawHeader($rawHeader)
@@ -31,22 +34,23 @@ class Http implements ProtocolProcessorInterface
     {
         if ($this->header === null) {
             $headerEndPosition = $this->appendRawHeader($reveiceMessage);
-            echo $this->rawHeader;
             if ($headerEndPosition!==false) {
                 $this->header = $this->parseHeader(substr($this->rawHeader, 0, $headerEndPosition));
                 $this->rawHeader = null;
+                $this->connection->trigger(Connection::EVENT_HTTP_REQUEST, $this->connection, $this->header);
             }
-
             return;
         }
     }
 
     public function onWriteBufferEmpty()
     {
+
     }
 
     public function __destruct()
     {
+        $this->header = null;
         $this->connection = null;
     }
 }

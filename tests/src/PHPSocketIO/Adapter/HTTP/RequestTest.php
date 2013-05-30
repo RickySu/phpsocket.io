@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPSocketIO\HTTPHeader;
+namespace PHPSocketIO\Adapter\HTTP;
 
 class RequestTestObject extends Request
 {
@@ -15,6 +15,11 @@ class RequestTestObject extends Request
         $this->parseMethod($line);
     }
 
+    public function parseHeaderLineTest($line)
+    {
+        $this->parseHeaderLine($line);
+    }
+
 }
 
 /**
@@ -27,6 +32,17 @@ class RequestTest extends \PHPUnit_Framework_TestCase {
      * @var RequestTestObject
      */
     protected $object;
+
+    public function header_line_test_case()
+    {
+        return array(
+            array(
+                'source' => 'Cookie: testcookie',
+                'field' => 'cookie',
+                'content' => 'testcookie',
+            ),
+        );
+    }
 
     public function header_method_test_case()
     {
@@ -76,6 +92,16 @@ class RequestTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($params, $this->object->getParams());
         $this->assertEquals($protocol, $this->object->getProtocol());
         $this->assertEquals($protocol_version, $this->object->getProtocolVersion());
+    }
+
+    /**
+     * @dataProvider header_line_test_case
+     */
+    public function testParseHeaderLine($line, $field, $content)
+    {
+        $this->object->parseHeaderLineTest($line);
+        $method="get".strtoupper(substr($field,0,1)).substr($field,1);
+        $this->assertEquals($content, $this->object->$method());
     }
 
     /**
