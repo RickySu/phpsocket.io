@@ -4,7 +4,6 @@ namespace PHPSocketIO;
 class Connection
 {
     const READ_BUFFER_SIZE = 1024;
-    const STOP_EVENT_PROPAGATE = 'STOP';
     const EVENT_HTTP_REQUEST= 'http.request';
     protected $address;
     protected $baseEvent;
@@ -12,11 +11,10 @@ class Connection
     protected $eventBufferEvent;
     protected $shutdownAfterSend = false;
 
-    protected $events;
-
     protected $namespace;
 
     protected $timeoutEvent;
+
     /**
      *
      * @var Adapter\ProtocolProcessorInterface
@@ -106,26 +104,13 @@ class Connection
         $this->baseEvent = null;
         $this->socket = null;
         $this->protocolProcessor = null;
-        $this->events = null;
         $this->clearTimeout();
+        $this->unregisterEvent();
     }
 
     public function on($event, $callback)
     {
-        $this->events[$event][] = $callback;
-    }
-
-    public function trigger($event, Connection $connection, $data)
-    {
-        if(!isset($this->events[$event])){
-            return;
-        }
-
-        foreach($this->events[$event] as $callback){
-            if($callback($connection, $data) === self::STOP_EVENT_PROPAGATE){
-                break;
-            }
-        }
+        Event\Holder::register($event, $this, $callback);
     }
 
     public function setTimeout($timer, $callback)
@@ -153,4 +138,13 @@ class Connection
         $this->shutdown();
     }
 
+    public function getAddress()
+    {
+        return implode(':',$this->address);
+    }
+
+    protected function unregisterEvent()
+    {
+        Event\Holder::unRegisterAllEvent($this);
+    }
 }

@@ -3,6 +3,7 @@
 namespace PHPSocketIO\Adapter;
 
 use PHPSocketIO\Connection;
+use PHPSocketIO\Event\Dispatcher;
 
 class Http implements ProtocolProcessorInterface
 {
@@ -29,7 +30,7 @@ class Http implements ProtocolProcessorInterface
     {
 
     }
-    
+
     protected function appendRawHeader($rawHeader)
     {
         $this->rawHeader .=  $rawHeader;
@@ -48,7 +49,8 @@ class Http implements ProtocolProcessorInterface
             if ($headerEndPosition!==false) {
                 $this->header = $this->parseHeader(substr($this->rawHeader, 0, $headerEndPosition));
                 $this->rawHeader = null;
-                $this->connection->trigger(Connection::EVENT_HTTP_REQUEST, $this->connection, $this->header);
+                Dispatcher::dispatch(Connection::EVENT_HTTP_REQUEST, $this->connection, $this->connection, $this->header);
+                //$this->connection->trigger(Connection::EVENT_HTTP_REQUEST, $this->connection, $this->header);
             }
             return;
         }

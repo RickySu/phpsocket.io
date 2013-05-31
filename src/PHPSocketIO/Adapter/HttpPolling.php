@@ -6,7 +6,8 @@ use PHPSocketIO\Connection;
 
 abstract class HttpPolling extends Http
 {
-    static $send = false;
+
+    protected $defuleTimeout = 6;
 
     public function __construct(Connection $connection)
     {
@@ -24,7 +25,7 @@ abstract class HttpPolling extends Http
         $response->setRawHeader('Access-Control-Allow-Origin', $this->header->getOrigin())
                  ->setRawHeader('Access-Control-Allow-Credentials', 'true');
         $this->connection->write($response);
-        $this->connection->setTimeout(3, array($this, 'onTimeout'));
+        $this->connection->setTimeout($this->defuleTimeout, array($this, 'onTimeout'));
     }
 
 

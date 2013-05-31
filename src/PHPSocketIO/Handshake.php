@@ -7,7 +7,7 @@ use PHPSocketIO\Adapter;
 
 class Handshake
 {
-    protected $validTransportID = array(/*'websocket', 'htmlfile',*/ 'xhr-polling', 'jsonp-polling');
+    protected $validTransportID = array(/*'websocket', 'htmlfile', 'xhr-polling',*/ 'jsonp-polling');
 
     public function onRequest(Connection $connection, HTTP\Request $request)
     {
@@ -16,7 +16,7 @@ class Handshake
             return;
         }
         $this->parseRequest($connection, $request, $requestDocSplit);
-        return Connection::STOP_EVENT_PROPAGATE;
+        return Event\Dispatcher::STOP_PROPAGATE;
     }
 
     protected function parseRequest(Connection $connection, HTTP\Request $request, $requestDocSplit)
