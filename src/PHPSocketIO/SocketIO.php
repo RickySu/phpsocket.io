@@ -62,7 +62,7 @@ class SocketIO
     {
         $connection = new Connection($this->baseEvent, $socket, $address, $this->namespace);
         foreach ($this->onConnectCallbacks as $onConnectCallback) {
-            call_user_func($onConnectCallback, $connection);
+            $onConnectCallback($connection);
         }
     }
 

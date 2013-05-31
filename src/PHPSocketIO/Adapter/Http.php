@@ -7,11 +7,17 @@ use PHPSocketIO\Connection;
 class Http implements ProtocolProcessorInterface
 {
     protected $rawHeader='';
+
     /**
      *
      * @var HTTP\Request
      */
     protected $header;
+
+    /**
+     *
+     * @var PHPSocketIO\Connection
+     */
     protected $connection;
 
     protected function parseHeader($rawHeader)
@@ -19,6 +25,11 @@ class Http implements ProtocolProcessorInterface
         return new HTTP\Request($rawHeader);
     }
 
+    public function init()
+    {
+
+    }
+    
     protected function appendRawHeader($rawHeader)
     {
         $this->rawHeader .=  $rawHeader;
@@ -48,9 +59,27 @@ class Http implements ProtocolProcessorInterface
 
     }
 
+    public function getHeader()
+    {
+        return $this->header;
+    }
+
+    public function setHeader(HTTP\Request $header)
+    {
+        $this->header = $header;
+    }
+
     public function __destruct()
     {
         $this->header = null;
         $this->connection = null;
+    }
+
+    /**
+     *
+     * @return Connection
+     */
+    public function getConnection() {
+        return $this->connection;
     }
 }

@@ -16,6 +16,7 @@ class Connection
 
     protected $namespace;
 
+    protected $timeoutEvent;
     /**
      *
      * @var Adapter\ProtocolProcessorInterface
@@ -28,8 +29,8 @@ class Connection
         $this->socket = $socket;
         $this->address = $address;
         $this->namespace = $namespace;
-        $this->setProtocolProcessor(new Adapter\Http($this));
         $this->prepareEvent();
+        $this->setProtocolProcessor(new Adapter\Http($this));
         $this->prepareHandshake();
     }
 
@@ -43,21 +44,28 @@ class Connection
 
     public function setProtocolProcessor(Adapter\ProtocolProcessorInterface $processor)
     {
+        if($this->protocolProcessor !== null){
+            $processor->setHeader($this->protocolProcessor->getHeader());
+            $processor->init();
+        }
         $this->protocolProcessor = $processor;
     }
 
     protected function prepareEvent()
     {
-        $this->eventBufferEvent = new \EventBufferEvent($this->baseEvent, $this->socket, \EventBufferEvent::OPT_CLOSE_ON_FREE);
-        $this->eventBufferEvent->setCallbacks(function($eventBufferEvent, $arg){
-            $this->onReceive($eventBufferEvent, $arg);
-        }, function($eventBufferEvent, $arg){
-            $this->onWriteBufferEmpty($eventBufferEvent, $arg);
-        }, function($eventBufferEvent, $events, $ctx){
-            $this->onEvent($eventBufferEvent, $events, $ctx);
-        }, null);
-        $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
+        $this->eventBufferEvent = new \EventBufferEvent(
+            $this->baseEvent,
+            $this->socket,
+            \EventBufferEvent::OPT_CLOSE_ON_FREE,
+            function($eventBufferEvent, $arg){
+                $this->onReceive($eventBufferEvent, $arg);
+            }, function($eventBufferEvent, $arg){
+                $this->onWriteBufferEmpty($eventBufferEvent, $arg);
+            }, function($eventBufferEvent, $events, $ctx){
+                $this->onEvent($eventBufferEvent, $events, $ctx);
+            });
         $this->eventBufferEvent->setWatermark(\Event::WRITE, 0, 0);
+        $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
     }
 
     protected function onEvent(\EventBufferEvent $eventBufferEvent, $events, $ctx)
@@ -99,6 +107,7 @@ class Connection
         $this->socket = null;
         $this->protocolProcessor = null;
         $this->events = null;
+        $this->clearTimeout();
     }
 
     public function on($event, $callback)
@@ -113,10 +122,30 @@ class Connection
         }
 
         foreach($this->events[$event] as $callback){
-            if(call_user_func($callback, $connection, $data) === self::STOP_EVENT_PROPAGATE){
+            if($callback($connection, $data) === self::STOP_EVENT_PROPAGATE){
                 break;
             }
         }
+    }
+
+    public function setTimeout($timer, $callback)
+    {
+         $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use($callback){
+             $callback();
+             $this->clearTimeout();
+         });
+         $this->timeoutEvent->data = $this->timeoutEvent;
+         $this->timeoutEvent->addTimer($timer);
+    }
+
+    public function clearTimeout()
+    {
+        if($this->timeoutEvent === null){
+            return;
+        }
+        $this->timeoutEvent->data = null;
+        $this->timeoutEvent->free();
+        $this->timeoutEvent = null;
     }
 
     public function __destruct()
