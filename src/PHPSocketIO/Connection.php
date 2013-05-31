@@ -113,6 +113,11 @@ class Connection
         Event\Holder::register($event, $this, $callback);
     }
 
+    public function emit($event, $data)
+    {
+        Event\Dispatcher::brocastToClient($event, $data);
+    }
+
     public function setTimeout($timer, $callback)
     {
          $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use($callback){

@@ -11,42 +11,42 @@ class Holder
 
     static public function register($event, Connection $connection, $callback)
     {
-        self::$eventQueue[$event][$connection->getAddress()][] = $callback;
-        self::$connectionEvents[$connection->getAddress()][$event] = true;
+        static::$eventQueue[$event][$connection->getAddress()][] = $callback;
+        static::$connectionEvents[$connection->getAddress()][$event] = true;
     }
 
     static public function get($event, Connection $connection = null)
     {
         if($connection){
-            return self::$eventQueue[$event][$connection->getAddress()];
+            return static::$eventQueue[$event][$connection->getAddress()];
         }
 
         $callbacks=[];
 
-        array_walk_recursive(self::$eventQueue[$event], function($callback, $key) use(&$callbacks){
+        array_walk_recursive(static::$eventQueue[$event], function($callback, $key) use(&$callbacks){
             $callbacks[]=$callback;
         });
-        
+
         return $callbacks;
     }
 
     static public function unRegister($event, Connection $connection)
     {
         $address = $connection->getAddress();
-        if(!isset(self::$eventQueue[$event][$address])){
+        if(!isset(static::$eventQueue[$event][$address])){
             return;
         }
-        unset(self::$eventQueue[$event][$address]);
-        unset(self::$connectionEvents[$address][$event]);
+        unset(static::$eventQueue[$event][$address]);
+        unset(static::$connectionEvents[$address][$event]);
     }
 
     static public function unRegisterAllEvent(Connection $connection)
     {
         $address = $connection->getAddress();
-        foreach(self::$connectionEvents[$address] as $event => $registed){
-            unset(self::$eventQueue[$event][$address]);
+        foreach(static::$connectionEvents[$address] as $event => $registed){
+            unset(static::$eventQueue[$event][$address]);
         }
-        unset(self::$connectionEvents[$address]);
+        unset(static::$connectionEvents[$address]);
     }
 
 }

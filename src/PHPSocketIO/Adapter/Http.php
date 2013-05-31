@@ -50,7 +50,6 @@ class Http implements ProtocolProcessorInterface
                 $this->header = $this->parseHeader(substr($this->rawHeader, 0, $headerEndPosition));
                 $this->rawHeader = null;
                 Dispatcher::dispatch(Connection::EVENT_HTTP_REQUEST, $this->connection, $this->connection, $this->header);
-                //$this->connection->trigger(Connection::EVENT_HTTP_REQUEST, $this->connection, $this->header);
             }
             return;
         }

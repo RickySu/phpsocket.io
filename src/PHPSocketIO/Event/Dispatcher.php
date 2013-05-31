@@ -21,6 +21,11 @@ class Dispatcher
         }
     }
 
+    static public function brocastToClient($event, Connection $connection = null, $data)
+    {
+        static::brocast("$event.toclient", $connection, $data);
+    }
+
     static public function brocast($event, Connection $connection = null, $data)
     {
         $params = func_get_args();
