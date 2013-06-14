@@ -1,5 +1,9 @@
 {
     "name": "rickysu/php-socketio",
     "homepage": "http://github.com/rickysu/php-socketio/",
+    "require": {
+        "php": ">=5.4",
+        "symfony/http-foundation":  ">=2.2"
+    },
     "autoload": { "psr-0": { "PHPSocketIO": "src" } }
 }
