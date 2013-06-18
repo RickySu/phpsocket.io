@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPSocketIO\Adapter;
+namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
 

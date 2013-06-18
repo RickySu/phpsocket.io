@@ -2,8 +2,8 @@
 
 namespace PHPSocketIO;
 
-use PHPSocketIO\Adapter\HTTP;
-use PHPSocketIO\Adapter;
+use PHPSocketIO\HTTP\HTTP;
+use PHPSocketIO\HTTP;
 
 class Handshake
 {

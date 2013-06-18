@@ -3,7 +3,8 @@
     "homepage": "http://github.com/rickysu/php-socketio/",
     "require": {
         "php": ">=5.4",
-        "symfony/http-foundation":  ">=2.2"
+        "symfony/http-foundation":  ">=2.2",
+        "symfony/event-dispatcher": ">=2.3"
     },
     "autoload": { "psr-0": { "PHPSocketIO": "src" } }
 }

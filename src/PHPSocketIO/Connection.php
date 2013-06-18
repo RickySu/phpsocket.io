@@ -4,7 +4,7 @@ namespace PHPSocketIO;
 class Connection
 {
     const READ_BUFFER_SIZE = 1024;
-    const EVENT_HTTP_REQUEST= 'http.request';
+
     protected $address;
     protected $baseEvent;
     protected $socket;
@@ -14,6 +14,8 @@ class Connection
     protected $namespace;
 
     protected $timeoutEvent;
+
+    protected $registedEvent = array();
 
     /**
      *
@@ -25,22 +27,17 @@ class Connection
     {
         $this->baseEvent = $baseEvent;
         $this->socket = $socket;
-        $this->address = $address;
+        $this->address = implode(':', $address);
         $this->namespace = $namespace;
         $this->prepareEvent();
-        $this->setProtocolProcessor(new Adapter\Http($this));
-        $this->prepareHandshake();
+        $this->setProtocolProcessor(new Http\Http($this));
     }
 
     public function getNamespace(){
         return $this->namespace;
     }
-    protected function prepareHandshake()
-    {
-        $this->on(self::EVENT_HTTP_REQUEST, array(new Handshake(), 'onRequest'));
-    }
 
-    public function setProtocolProcessor(Adapter\ProtocolProcessorInterface $processor)
+    public function setProtocolProcessor(Http\ProtocolProcessorInterface $processor)
     {
         if($this->protocolProcessor !== null){
             $processor->setHeader($this->protocolProcessor->getHeader());
@@ -79,9 +76,9 @@ class Connection
         $this->protocolProcessor->onReceive($receiveMessage);
     }
 
-    public function write($message, $shutdownAfterSend = false)
+    public function write($response, $shutdownAfterSend = false)
     {
-        $this->eventBufferEvent->write($message);
+        $this->eventBufferEvent->write($response);
         $this->shutdownAfterSend = $shutdownAfterSend;
     }
 
@@ -103,14 +100,10 @@ class Connection
         $this->eventBufferEvent = null;
         $this->baseEvent = null;
         $this->socket = null;
+        $this->protocolProcessor->free();
         $this->protocolProcessor = null;
         $this->clearTimeout();
         $this->unregisterEvent();
-    }
-
-    public function on($event, $callback)
-    {
-        Event\Holder::register($event, $this, $callback);
     }
 
     public function emit($event, $data)
@@ -145,11 +138,27 @@ class Connection
 
     public function getAddress()
     {
-        return implode(':',$this->address);
+        return $this->address;
+    }
+
+    public function on($eventName, $callback)
+    {
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener($eventName, $callback, $this->address);
+        $this->registedEvent[] = $eventName;
+    }
+
+    public function onRequest($requestCallback)
+    {
+        $this->protocolProcessor->onRequest($requestCallback);
     }
 
     protected function unregisterEvent()
     {
-        Event\Holder::unRegisterAllEvent($this);
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        foreach($this->registedEvent as $eventName){
+            $dispatcher->removeListener($eventName, $this->address);
+        }
     }
+
 }

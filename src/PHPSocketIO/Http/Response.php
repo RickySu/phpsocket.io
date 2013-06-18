@@ -1,5 +1,5 @@
 <?php
-namespace PHPSocketIO\HTTP;
+namespace PHPSocketIO\Http;
 
 use Symfony\Component\HttpFoundation;
 

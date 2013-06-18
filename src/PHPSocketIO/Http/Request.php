@@ -1,5 +1,5 @@
 <?php
-namespace PHPSocketIO\HTTP;
+namespace PHPSocketIO\Http;
 
 use Symfony\Component\HttpFoundation;
 
@@ -9,5 +9,4 @@ use Symfony\Component\HttpFoundation;
  * @author ricky
  */
 class Request extends HttpFoundation\Request {
-    const EVENT_HTTP_REQUEST = 'event.http.request';
 }

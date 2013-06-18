@@ -8,7 +8,7 @@ class SocketIO
     protected $listenHost;
     protected $listenPort;
 
-    protected $onConnectCallbacks = [];
+    protected $onConnectCallback;
 
     protected $namespace = 'socket.io';
 
@@ -40,8 +40,7 @@ class SocketIO
 
     public function onConnect($callback)
     {
-        $this->onConnectCallbacks[] = $callback;
-
+        $this->onConnectCallback = $callback;
         return $this;
     }
 
@@ -56,13 +55,26 @@ class SocketIO
             -1,
             "{$this->listenHost}:{$this->listenPort}"
         );
+        $this->registGC();
+    }
+
+    protected function registGC()
+    {
+        $timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT|\Event::PERSIST, function($fd, $what, $event){
+            gc_collect_cycles();
+        });
+        $timeoutEvent->data = $timeoutEvent;
+        $timeoutEvent->addTimer(60);
     }
 
     protected function doAccept(\EventListener $eventListener, $socket, $address, $ctx)
     {
-        $connection = new Connection($this->baseEvent, $socket, $address, $this->namespace);
-        foreach ($this->onConnectCallbacks as $onConnectCallback) {
-            $onConnectCallback($connection);
+        try{
+            $connection = new Connection($this->baseEvent, $socket, $address, $this->namespace);
+            call_user_func($this->onConnectCallback, $connection);
+        }
+        catch(\Exception $e){
+            $connection->write(new HTTP\Response($e->getMessage(), $e->getCode()), true);
         }
     }
 
@@ -70,6 +82,6 @@ class SocketIO
     {
         $this->baseEvent = null;
         $this->eventListener = null;
-        $this->onConnectCallbacks = null;
+        $this->onConnectCallback = null;
     }
 }
