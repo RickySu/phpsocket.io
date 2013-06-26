@@ -2,11 +2,9 @@
 namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
+use PHPSocketIO\Event;
 
 interface ProtocolProcessorInterface
 {
     public function __construct(Connection $connection);
-    public function onReceive($reveiceMessage);
-    public function onWriteBufferEmpty();
-    public function free();
 }

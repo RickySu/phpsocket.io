@@ -2,36 +2,34 @@
 namespace PHPSocketIO\Event;
 use Symfony\Component\EventDispatcher\Event;
 use PHPSocketIO\Connection;
-use PHPSocketIO\Http;
 
 /**
  * Description of RequestEvent
  *
  * @author ricky
  */
-class RequestEvent extends Event{
+class ReceiveEvent extends Event{
 
     protected $connection;
-    protected $request;
+    protected $message;
 
-    public function __construct(Connection $connection, HTTP\Request $request)
+    public function __construct(Connection $connection, $message)
     {
         $this->connection = $connection;
-        $this->request = $request;
+        $this->message = $message;
     }
 
     public function __destruct() {
         $this->connection = null;
-        $this->request = null;
     }
 
     /**
      *
-     * @return Http\Request
+     * @return mixed
      */
-    public function getRequest()
+    public function getMessage()
     {
-        return $this->request;
+        return $this->message;
     }
 
     /**

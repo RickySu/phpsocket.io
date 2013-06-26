@@ -7,40 +7,26 @@ use PHPSocketIO\Event;
 class Http implements ProtocolProcessorInterface
 {
 
-    protected $requestParser;
-    protected $requestCb;
-
     public function __construct(Connection $connection)
     {
-        $this->requestParser = new Parser\RequestParser(function(Request $request) use($connection){
-            unset($this->requestParser);
-            call_user_func($this->requestCb, new Event\RequestEvent($connection, $request));
-        });
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener('request', function(Event\RequestEvent $requestEvent){
+            $this->onRequest($requestEvent);
+        }, $connection);
+        new Parser\RequestParser($connection);
     }
 
-    public function onRequest($requestCb)
+    public function onRequest(Event\RequestEvent $requestEvent)
     {
-        $this->requestCb = $requestCb;
-    }
-
-    public function onReceive($reveiceMessage)
-    {
-        $this->requestParser->onReceive($reveiceMessage);
-    }
-
-    public function onWriteBufferEmpty()
-    {
-
-    }
-
-    public function free()
-    {
-        $this->requestParser = null;
-        $this->requestCb = null;
-    }
-    public function __destruct()
-    {
-        $this->free();
+        $handshakeResult = Handshake::initialize($requestEvent->getConnection(), $requestEvent->getRequest());
+        if($handshakeResult === Handshake::PROTOCOL_HTMLFILE){
+            return;
+        }
+        $requestEvent->stopPropagation();
+        if($handshakeResult instanceof Response){
+            $requestEvent->getConnection()->write($handshakeResult, true);
+            return;
+        }
     }
 
 }

@@ -20,9 +20,12 @@ class ResponseChunkStart extends HttpFoundation\Response implements ResponseInte
     }
 
     public function __toString() {
-        return
+        $response =
             sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText)."\r\n".
-            $this->headers."\r\n".
-            sprintf("%x\r\n%s\r\n", strlen($this->getContent()), $this->getContent());
+            $this->headers."\r\n";
+        if($this->getContent()!==''){
+            $response.=printf("%x\r\n%s\r\n", strlen($this->getContent()), $this->getContent());
+        }
+        return $response;
     }
 }

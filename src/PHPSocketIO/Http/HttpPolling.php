@@ -4,26 +4,35 @@ namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
 
-abstract class HttpPolling extends Http
+abstract class HttpPolling
 {
+
+    /**
+     *
+     * @var Connection
+     */
+    protected $connection;
+
+    /**
+     *
+     * @var Request
+     */
+    protected $request;
 
     protected $defuleTimeout = 6;
 
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, Request $request)
     {
-        parent::__construct($connection);
-    }
-
-    public function init()
-    {
+        $this->connection = $connection;
+        $this->request = $request;
         $this->enterPollingMode();
     }
 
     protected function enterPollingMode()
     {
-        $response = new HTTP\ResponseChunkStart();
-        $response->setRawHeader('Access-Control-Allow-Origin', $this->header->getOrigin())
-                 ->setRawHeader('Access-Control-Allow-Credentials', 'true');
+        $response = new ResponseChunkStart();
+        $response->headers->set('Access-Control-Allow-Origin', $this->request->headers->get('Origin'));
+        $response->headers->set('Access-Control-Allow-Credentials', 'true');
         $this->connection->write($response);
         $this->connection->setTimeout($this->defuleTimeout, array($this, 'onTimeout'));
     }
@@ -34,18 +43,8 @@ abstract class HttpPolling extends Http
     protected function writeContent($content)
     {
         $this->connection->clearTimeout();
-        $this->connection->write(new HTTP\ResponseChunk($content));
-        $this->connection->write(new HTTP\ResponseChunkEnd(), true);
-    }
-
-    public function onReceive($reveiceMessage)
-    {
-
-    }
-
-    public function onWriteBufferEmpty()
-    {
-
+        $this->connection->write(new ResponseChunk($content));
+        $this->connection->write(new ResponseChunkEnd(), true);
     }
 
 }

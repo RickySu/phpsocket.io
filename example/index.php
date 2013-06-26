@@ -12,7 +12,7 @@ $socketio = new SocketIO();
 $socketio
         ->listen(8080)
         ->onConnect(function(Connection $connection) {
-            $connection->onRequest(function(RequestEvent $event) {
+            $connection->on('request', function(RequestEvent $event) {
                 $connection = $event->getConnection();
                 $connection->write(new Response("askahjskjahs"), true);
             });
