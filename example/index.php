@@ -14,6 +14,8 @@ $socketio
         ->onConnect(function(Connection $connection) {
             $connection->on('request', function(RequestEvent $event) {
                 $connection = $event->getConnection();
-                $connection->write(new Response("askahjskjahs"), true);
+                //$connection->write(new Response("hello world!"), true);
+                $connection->sendResponse(new Response("hello world!"));
+                //$connection->write(new Response("hello world!"), true);
             });
         })->dispatch();

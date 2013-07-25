@@ -4,9 +4,11 @@ namespace PHPSocketIO;
 class SocketIO
 {
     protected $baseEvent;
-    protected $eventListener;
+    protected $eventHttp;
     protected $listenHost;
     protected $listenPort;
+
+    protected $eventBufferEvents=array();
 
     protected $onConnectCallback;
 
@@ -32,10 +34,25 @@ class SocketIO
         return $this;
     }
 
+    protected function eventBufferEventGc()
+    {
+        foreach($this->eventBufferEvents as $eventBufferEvent){
+            $eventBufferEvent->setCallbacks(null, null, null);
+            $eventBufferEvent->free();
+        }
+        $this->eventBufferEvents=array();
+    }
+
     public function dispatch()
     {
         $this->createEventListener();
-        $this->baseEvent->dispatch();
+        while(true){
+            if($this->baseEvent->gotExit()){
+                break;
+            }
+            $this->baseEvent->dispatch();
+            $this->eventBufferEventGc();
+        }
     }
 
     public function onConnect($callback)
@@ -46,36 +63,16 @@ class SocketIO
 
     protected function createEventListener()
     {
-        $this->eventListener = new \EventListener($this->baseEvent,
-            function($eventListener, $socket, $address, $ctx){
-                $this->doAccept($eventListener, $socket, $address, $ctx);
-            },
-            $this->baseEvent,
-            \EventListener::OPT_CLOSE_ON_FREE | \EventListener::OPT_REUSEABLE,
-            -1,
-            "{$this->listenHost}:{$this->listenPort}"
-        );
-        $this->registGC();
-    }
-
-    protected function registGC()
-    {
-        $timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT|\Event::PERSIST, function($fd, $what, $event){
-            gc_collect_cycles();
-        });
-        $timeoutEvent->data = $timeoutEvent;
-        $timeoutEvent->addTimer(60);
-    }
-
-    protected function doAccept(\EventListener $eventListener, $socket, $address, $ctx)
-    {
-        try{
-            $connection = new Connection($this->baseEvent, $socket, $address, $this->namespace);
+        $this->eventHttp = new \EventHttp($this->baseEvent);
+        $this->eventHttp->bind($this->listenHost, $this->listenPort);
+        $this->eventHttp->setDefaultCallback(function($request){
+            $connection = new Connection($this->baseEvent, $request, $this->namespace, function(\EventBufferEvent $event){
+                $this->eventBufferEvents[]=$event;
+                $this->baseEvent->stop();
+            });
             call_user_func($this->onConnectCallback, $connection);
-        }
-        catch(\Exception $e){
-            $connection->write(new HTTP\Response($e->getMessage(), $e->getCode()), true);
-        }
+            $connection->parseHTTP();
+        });
     }
 
     public function __destruct()

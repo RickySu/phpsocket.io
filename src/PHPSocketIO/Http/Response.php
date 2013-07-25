@@ -9,4 +9,8 @@ use Symfony\Component\HttpFoundation;
  * @author ricky
  */
 class Response extends HttpFoundation\Response implements ResponseInterface{
+    public function __toString() {
+        $this->headers->set('Content-Length', strlen($this->getContent()));
+        return parent::__toString();
+    }
 }

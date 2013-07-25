@@ -39,11 +39,11 @@ class EventDispatcher
             $this->brocast($eventName, $event);
             return;
         }
-        if(!isset($this->events[$eventName][$connection->getAddress()])){
+        list($address, $port) = $connection->getRemote();
+        if(!isset($this->events[$eventName]["$address:$port"])){
             return;
         }
-
-        foreach($this->events[$eventName][$connection->getAddress()] as &$listener){
+        foreach($this->events[$eventName]["$address:$port"] as &$listener){
             $listener($event);
             if($event && $event->isPropagationStopped()){
                 return;
@@ -52,33 +52,36 @@ class EventDispatcher
 
     }
 
-    public function addListener($eventName, $listener, Connection $connection) {
-        $this->events[$eventName][$connection->getAddress()][] = $listener;
-        $this->groupEvents[$connection->getAddress()][$eventName]=true;
+    public function addListener($eventName, $listener, Connection $connection)
+    {
+        list($address, $port) = $connection->getRemote();
+        $this->events[$eventName]["$address:$port"][] = $listener;
+        $this->groupEvents["$address:$port"][$eventName]=true;
     }
 
     public function removeGroupListener(Connection $connection)
     {
-        if(!isset($this->groupEvents[$connection->getAddress()])){
+        list($address, $port) = $connection->getRemote();
+        if(!isset($this->groupEvents["$address:$port"])){
             return;
         }
-        foreach($this->groupEvents[$connection->getAddress()] as $eventName => $tmp){
+        foreach($this->groupEvents["$address:$port"] as $eventName => $tmp){
             $this->removeListener($eventName, $connection);
         }
-        unset($this->groupEvents[$connection->getAddress()]);
+        unset($this->groupEvents["$address:$port"]);
     }
 
     public function removeListener($eventName, Connection $connection, $listener = null) {
         if(!isset($this->events[$eventName])){
             return;
         }
-
+        list($address, $port) = $connection->getRemote();
         if($listener !== null){
-            if(false !== ($key = array_search($listener, $this->events[$eventName][$connection->getAddress()], true))){
-                unset($this->events[$eventName][$connection->getAddress()][$key]);
+            if(false !== ($key = array_search($listener, $this->events[$eventName]["$address:$port"], true))){
+                unset($this->events[$eventName]["$address:$port"][$key]);
             }
             return;
         }
-        unset($this->events[$eventName][$connection->getAddress()]);
+        unset($this->events[$eventName]["$address:$port"]);
     }
 }

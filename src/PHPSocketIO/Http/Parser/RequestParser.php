@@ -13,39 +13,30 @@ use PHPSocketIO\Connection;
 class RequestParser {
 
     const MAX_HEADER_SIZE = 1024;
-    protected $data = '';
     protected $request = null;
 
     public function __construct(Connection $connection) {
-        $connection->onRecieve(function(Event\ReceiveEvent $receiveEvent){
-            $this->onReceive($receiveEvent);
-        });
-    }
-    protected function appendData($data)
-    {
-        $this->data.=$data;
+        $this->parseRequest($connection);
     }
 
     protected function parseRequest(Connection $connection)
     {
-        if(strlen($this->data) > static::MAX_HEADER_SIZE){
-            throw new Exception(HTTP\Response::$statusTexts[414], 414);
-        }
-
-        $pos = strpos($this->data, "\r\n\r\n");
-
-        if($pos === null){
-            return;
-        }
-
-        $header = substr($this->data, 0, $pos);
-        $this->data = substr($this->data, $pos + 4);   //skip \r\n\r\n
+        $request = $connection->getRequest();
+        $header = $request->getInputHeaders();
         $SERVER = $this->parseServer($header);
-        if(isset($SERVER['HTTP_COOKIE'])){
-            $COOKIE = $this->parseCookie($SERVER['HTTP_COOKIE']);
+        list($SERVER['REMOTE_ADDR'], $SERVER['REMOTE_PORT']) = $connection->getRemote();
+        if(isset($header['HTTP_COOKIE'])){
+            $COOKIE = $this->parseCookie($header['HTTP_COOKIE']);
         }
         else{
             $COOKIE = array();
+        }
+        $SERVER['REQUEST_URI'] = $request->getUri();
+        if(($pos = strpos('?', $SERVER['REQUEST_URI'])) !== false){
+            $SERVER['QUERY_STRING'] = substr($SERVER['REQUEST_URI'], $pos+1);
+        }
+        else{
+            $SERVER['QUERY_STRING'] = '';
         }
         $GET = $this->parseGET($SERVER['QUERY_STRING']);
         $POST = $this->parsePOST(null);
@@ -77,19 +68,13 @@ class RequestParser {
         return $COOKIE;
     }
 
-    protected function parseServer($header)
+    protected function parseServer($headers)
     {
-        $headerArray = explode("\r\n", $header);
-        list($SERVER["REQUEST_METHOD"], $SERVER["REQUEST_URI"], $SERVER["SERVER_PROTOCOL"]) = explode(' ', array_shift($headerArray));
-        foreach($headerArray as $line){
-            $pos = strpos($line, ':');
-            $key = str_replace('-', '_', strtoupper(trim(substr($line, 0, $pos))));
-            $val = trim(substr($line, $pos + 1));
-            $SERVER["HTTP_$key"] = $val;
+        foreach($headers as $key => $value){
+            $key = strtoupper(str_replace('-', '_', $key));
+            $SERVER["HTTP_$key"] = $value;
         }
 
-        @list(, $queryString) = explode('?', $SERVER['REQUEST_URI']);
-        $SERVER['QUERY_STRING'] = $queryString;
         return $SERVER;
     }
 

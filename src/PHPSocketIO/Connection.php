@@ -5,18 +5,23 @@ class Connection
 {
     const READ_BUFFER_SIZE = 1024;
 
-    protected $address;
     protected $baseEvent;
-    protected $socket;
     protected $eventBufferEvent;
-    protected $shutdownAfterSend = false;
+
+    protected $request;
 
     protected $namespace;
 
     protected $timeoutEvent;
 
+    protected $shutdownAfterSend = false;
+
     protected $onReceiveCallbacks=[];
     protected $onWriteBufferEmptyCallbacks=[];
+
+    protected $eventBufferEventGCCallback;
+
+    protected $remote;
 
     /**
      *
@@ -24,95 +29,80 @@ class Connection
      */
     protected $protocolProcessor;
 
-    public function __construct(\EventBase $baseEvent, $socket, $address, $namespace)
+    public function __construct(\EventBase $baseEvent, \EventHttpRequest $request, $namespace, $eventBufferEventGCCallback)
     {
         $this->baseEvent = $baseEvent;
-        $this->socket = $socket;
-        $this->address = implode(':', $address);
         $this->namespace = $namespace;
-        $this->prepareEvent();
+        $this->eventBufferEventGCCallback = $eventBufferEventGCCallback;
+        $this->request = $request;
+    }
+
+    public function parseHTTP()
+    {
         new Http\Http($this);
+    }
+
+    public function sendResponse(Http\Response $response)
+    {
+        $buffer = $this->request->getOutputBuffer();
+        $buffer->add($response->getContent());
+        $this->request->sendReply($response->getStatusCode(), $response->getStatusCode());
+    }
+
+    protected function getEventBufferEvent()
+    {
+        if(!$this->eventBufferEvent){
+            $this->eventBufferEvent = $this->request->getEventBufferEvent();
+            $this->eventBufferEvent->setCallbacks(function(){
+            }, function(){
+                if($this->shutdownAfterSend){
+                    $this->request->sendReplyEnd();
+                    call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent);
+                }
+            }, function(){
+            });
+            $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
+        }
+        return $this->eventBufferEvent;
+    }
+    public function write(Http\Response $response, $shutdownAfterSend = false)
+    {
+        $this->shutdownAfterSend = $shutdownAfterSend;
+        $this->getEventBufferEvent()->write($response);
+    }
+
+    public function getRequest()
+    {
+        return $this->request;
+    }
+
+    public function getRemote()
+    {
+        if(!$this->remote){
+            $this->request->getEventHttpConnection()->getPeer($address, $port);
+            $this->remote = array($address, $port);
+        }
+        return $this->remote;
     }
 
     public function getNamespace(){
         return $this->namespace;
     }
 
-    public function prepareProcessor()
-    {
-    }
-
-    protected function prepareEvent()
-    {
-        $this->eventBufferEvent = new \EventBufferEvent(
-            $this->baseEvent,
-            $this->socket,
-            \EventBufferEvent::OPT_CLOSE_ON_FREE,
-            function($eventBufferEvent, $arg){
-                $this->onReadCallback($eventBufferEvent, $arg);
-            }, function($eventBufferEvent, $arg){
-                $this->onWriteBufferEmptyCallback($eventBufferEvent, $arg);
-            }, function($eventBufferEvent, $events, $ctx){
-                $this->onEventCallback($eventBufferEvent, $events, $ctx);
-            });
-        $this->eventBufferEvent->setWatermark(\Event::WRITE, 0, 0);
-        $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
-    }
-
-    protected function onEventCallback(\EventBufferEvent $eventBufferEvent, $events, $ctx)
-    {
-        if ($events & (\EventBufferEvent::EOF | \EventBufferEvent::ERROR)) {
-            $this->free();
-        }
-    }
-
-    protected function onReadCallback(\EventBufferEvent $eventBufferEvent, $arg)
-    {
-        $receiveMessage = $eventBufferEvent->input->read(self::READ_BUFFER_SIZE);
-        $event = new Event\ReceiveEvent($this, $receiveMessage);
-        foreach($this->onReceiveCallbacks as $callback){
-            $callback($event);
-            if($event->isPropagationStopped()){
-                return;
-            }
-        }
-    }
-
-    public function write($response, $shutdownAfterSend = false)
-    {
-        $this->eventBufferEvent->write($response);
-        $this->shutdownAfterSend = $shutdownAfterSend;
-    }
-
-    protected function onWriteBufferEmptyCallback(\EventBufferEvent $eventBufferEvent, $arg)
-    {
-        if ($this->shutdownAfterSend) {
-            $this->free();
-            return;
-        }
-        foreach($this->onWriteBufferEmptyCallbacks as $callback){
-            $callback();
-        }
-    }
-
     public function free()
     {
-        if (!$this->eventBufferEvent) {
-            return;
+        if ($this->eventBufferEvent) {
+            call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent);
         }
-        $this->eventBufferEvent->free();
-        $this->eventBufferEvent = null;
-        $this->baseEvent = null;
-        $this->socket = null;
         $this->clearTimeout();
+        $this->unregisterEvent();
+        $this->baseEvent = null;
+        $this->eventBufferEvent = null;
+        $this->request = null;
         $this->onReceiveCallbacks = null;
         $this->onWriteBufferEmptyCallbacks = null;
-        $this->unregisterEvent();
-    }
+        $this->eventBufferEventGCCallback = null;
 
-    public function emit($event, $data)
-    {
-        Event\Dispatcher::brocastToClient($event, $data);
     }
 
     public function setTimeout($timer, $callback)
@@ -138,11 +128,6 @@ class Connection
     public function __destruct()
     {
         $this->free();
-    }
-
-    public function getAddress()
-    {
-        return $this->address;
     }
 
     public function on($eventName, $callback)
