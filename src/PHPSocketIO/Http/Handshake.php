@@ -2,6 +2,7 @@
 namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
+use PHPSocketIO\Event;
 
 class Handshake
 {
@@ -58,7 +59,9 @@ class Handshake
 
     protected static function generateHanshakeResponse(Request $request)
     {
-        $response = new Response(md5(rand().time()).':60:60:'.implode(',', self::$validTransportID));
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->dispatch('request.session', $returnEvent = new Event\ReturnEvent());
+        $response = new Response($returnEvent->getReturn().':60:60:'.implode(',', self::$validTransportID));
         $response->headers->set('Content-Type', 'text/plain');
         $response->headers->set('Access-Control-Allow-Origin', $request->headers->get('Origin'));
         $response->headers->set('Access-Control-Allow-Credentials', 'true');

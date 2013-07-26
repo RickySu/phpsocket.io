@@ -6,7 +6,7 @@ class Connection
     const READ_BUFFER_SIZE = 1024;
 
     protected $baseEvent;
-    protected $eventBufferEvent;
+    protected $eventBufferEvent = null;
 
     protected $request;
 
@@ -47,6 +47,7 @@ class Connection
         $buffer = $this->request->getOutputBuffer();
         $buffer->add($response->getContent());
         $this->request->sendReply($response->getStatusCode(), $response->getStatusCode());
+        $this->request->free();
     }
 
     protected function getEventBufferEvent()
@@ -56,8 +57,7 @@ class Connection
             $this->eventBufferEvent->setCallbacks(function(){
             }, function(){
                 if($this->shutdownAfterSend){
-                    $this->request->sendReplyEnd();
-                    call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent);
+                    $this->free();
                 }
             }, function(){
             });
@@ -65,7 +65,7 @@ class Connection
         }
         return $this->eventBufferEvent;
     }
-    public function write(Http\Response $response, $shutdownAfterSend = false)
+    public function write(Http\ResponseInterface $response, $shutdownAfterSend = false)
     {
         $this->shutdownAfterSend = $shutdownAfterSend;
         $this->getEventBufferEvent()->write($response);
@@ -91,11 +91,14 @@ class Connection
 
     public function free()
     {
-        if ($this->eventBufferEvent) {
-            call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent);
+        if(!$this->request){
+            return;
         }
         $this->clearTimeout();
         $this->unregisterEvent();
+        if($this->eventBufferEvent){
+            call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent, $this->request);
+        }
         $this->baseEvent = null;
         $this->eventBufferEvent = null;
         $this->request = null;
@@ -107,6 +110,7 @@ class Connection
 
     public function setTimeout($timer, $callback)
     {
+        echo "set tomeout: $timer\n";
          $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use($callback){
              $callback();
              $this->clearTimeout();

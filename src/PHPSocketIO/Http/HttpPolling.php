@@ -45,6 +45,7 @@ abstract class HttpPolling
         $this->connection->clearTimeout();
         $this->connection->write(new ResponseChunk($content));
         $this->connection->write(new ResponseChunkEnd(), true);
+        echo "aaaa\n";
     }
 
 }

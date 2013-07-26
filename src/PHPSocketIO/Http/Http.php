@@ -12,7 +12,7 @@ class Http implements ProtocolProcessorInterface
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener('request', function(Event\RequestEvent $requestEvent){
             $this->onRequest($requestEvent);
-        }, $connection);
+        }, $connection, true);
         new Parser\RequestParser($connection);
     }
 

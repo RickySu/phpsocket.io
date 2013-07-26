@@ -9,6 +9,7 @@ class SocketIO
     protected $listenPort;
 
     protected $eventBufferEvents=array();
+    protected $requests=array();
 
     protected $onConnectCallback;
 
@@ -40,6 +41,10 @@ class SocketIO
             $eventBufferEvent->setCallbacks(null, null, null);
             $eventBufferEvent->free();
         }
+        foreach($this->requests as $request){
+            $request->closeConnection();
+        }
+        $this->requests=array();
         $this->eventBufferEvents=array();
     }
 
@@ -66,8 +71,10 @@ class SocketIO
         $this->eventHttp = new \EventHttp($this->baseEvent);
         $this->eventHttp->bind($this->listenHost, $this->listenPort);
         $this->eventHttp->setDefaultCallback(function($request){
-            $connection = new Connection($this->baseEvent, $request, $this->namespace, function(\EventBufferEvent $event){
+            echo "on Connected\n";
+            $connection = new Connection($this->baseEvent, $request, $this->namespace, function(\EventBufferEvent $event, \EventHttpRequest $request) {
                 $this->eventBufferEvents[]=$event;
+                $this->requests[]=$request;
                 $this->baseEvent->stop();
             });
             call_user_func($this->onConnectCallback, $connection);

@@ -24,7 +24,7 @@ class EventDispatcher
 
     protected function brocast($eventName, Event $event = null) {
         foreach($this->events[$eventName] as &$eventGroup){
-            foreach($eventGroup as $event){
+            foreach($eventGroup as &$listener){
                 $listener($event);
                 if($event && $event->isPropagationStopped()){
                     return;
@@ -52,10 +52,20 @@ class EventDispatcher
 
     }
 
-    public function addListener($eventName, $listener, Connection $connection)
+    public function addListener($eventName, $listener, Connection $connection, $highPriority = false)
     {
         list($address, $port) = $connection->getRemote();
-        $this->events[$eventName]["$address:$port"][] = $listener;
+
+        if(!isset($this->events[$eventName]["$address:$port"])){
+            $this->events[$eventName]["$address:$port"]=array();
+        }
+
+        if($highPriority){
+            array_unshift($this->events[$eventName]["$address:$port"], $listener);
+        }
+        else{
+            array_push($this->events[$eventName]["$address:$port"], $listener);
+        }
         $this->groupEvents["$address:$port"][$eventName]=true;
     }
 
