@@ -14,7 +14,7 @@ class RequestEvent extends Event{
     protected $connection;
     protected $request;
 
-    public function __construct(Connection $connection, HTTP\Request $request)
+    public function __construct(Connection $connection, Http\Request $request)
     {
         $this->connection = $connection;
         $this->request = $request;

@@ -36,32 +36,71 @@ class Handshake
             return new Response('bad protocol', 400);
         }
 
+        $requestEvent = new Event\RequestEvent($connection, $request);
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->dispatch('request.init.session', $requestEvent);
+
         if(!isset($requestDocSplit[2]) || $requestDocSplit[2]==''){
-            return static::generateHanshakeResponse($request);
+            return static::generateHanshakeResponse($connection);
         }
 
         if(!in_array($requestDocSplit[2], static::$validTransportID)){
             return new Response('bad protocol', 400);
         }
+        if($request->isMethod('GET')){
+            static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
+            return;
+        }
 
-        return static::upgradeProtocol($connection, $request, $requestDocSplit[2]);
+        return static::processProtocol(json_decode($request->request->get('d'), true));
     }
 
-    protected static function upgradeProtocol(Connection $connection, Request $request, $transportId)
+    protected static function processProtocol($data)
     {
+        if(!preg_match('/^(.*?):(.*?):(.*?):(.*?)$/i', $data, $match)){
+            return new Response('bad protocol', 400);
+        }
+        list($raw, $type, $id, $endpoint, $jsonData) = $match;
+        switch($type){
+            case 5:    //Event
+                $eventData = json_decode($jsonData, true);
+                if(!isset($eventData['name']) && !isset($eventData['args'])){
+                    return new Response('bad protocol', 400);
+                }
+                $dispatcher = Event\EventDispatcher::getDispatcher();
+                $dispatcher->dispatch("client.{$eventData['name']}", new Event\ClientEvent($eventData['args']));
+                break;
+        }
+        return new Response('1');
+    }
+
+    protected static function upgradeProtocol(Connection $connection, Request $request, $transportId, $sessionId)
+    {
+        $session = $request->getSession();
+        $session->setId($sessionId);
+        $session->start();
+        $sessionInited = $session->get('sessionInited');
+
+        if(!$sessionInited){
+            $session->set('sessionInited', true);
+        }
+
         switch ($transportId){
             case 'jsonp-polling':
-                return new HttpJsonpPolling($connection, $request);
+                new HttpJsonpPolling($connection, $sessionInited);
+                break;
             case 'xhr-polling':
-                return new HttpXHRPolling($connection, $request);
+                new HttpXHRPolling($connection, $sessionInited);
+                break;
         }
     }
 
-    protected static function generateHanshakeResponse(Request $request)
+    protected static function generateHanshakeResponse(Connection $connection)
     {
-        $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->dispatch('request.session', $returnEvent = new Event\ReturnEvent());
-        $response = new Response($returnEvent->getReturn().':60:60:'.implode(',', self::$validTransportID));
+        $request = $connection->getRequest();
+        $session = $request->getSession();
+        $session->start();
+        $response = new Response("{$request->getSession()->getId()}:60:60:".implode(',', self::$validTransportID));
         $response->headers->set('Content-Type', 'text/plain');
         $response->headers->set('Access-Control-Allow-Origin', $request->headers->get('Origin'));
         $response->headers->set('Access-Control-Allow-Credentials', 'true');

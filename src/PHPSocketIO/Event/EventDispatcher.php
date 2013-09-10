@@ -34,6 +34,9 @@ class EventDispatcher
     }
 
     public function dispatch($eventName, Event $event = null, Connection $connection = null) {
+        if(!isset($this->events[$eventName])){
+            return;
+        }
         if($connection === null)
         {
             $this->brocast($eventName, $event);
@@ -49,13 +52,16 @@ class EventDispatcher
                 return;
             }
         }
-
     }
 
-    public function addListener($eventName, $listener, Connection $connection, $highPriority = false)
+    public function addListener($eventName, $listener, Connection $connection = null, $highPriority = false)
     {
-        list($address, $port) = $connection->getRemote();
-
+        if($connection){
+            list($address, $port) = $connection->getRemote();
+        }
+        else{
+            $address = $port = '';
+        }
         if(!isset($this->events[$eventName]["$address:$port"])){
             $this->events[$eventName]["$address:$port"]=array();
         }
@@ -81,11 +87,18 @@ class EventDispatcher
         unset($this->groupEvents["$address:$port"]);
     }
 
-    public function removeListener($eventName, Connection $connection, $listener = null) {
+    public function removeListener($eventName, Connection $connection = null, $listener = null) {
         if(!isset($this->events[$eventName])){
             return;
         }
-        list($address, $port) = $connection->getRemote();
+        
+        if($connection){
+            list($address, $port) = $connection->getRemote();
+        }
+        else{
+            $address = $port = '';
+        }
+
         if($listener !== null){
             if(false !== ($key = array_search($listener, $this->events[$eventName]["$address:$port"], true))){
                 unset($this->events[$eventName]["$address:$port"][$key]);

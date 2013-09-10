@@ -19,24 +19,23 @@ abstract class HttpPolling
      */
     protected $request;
 
-    protected $defuleTimeout = 6;
+    protected $defuleTimeout = 10;
 
-    public function __construct(Connection $connection, Request $request)
+    public function __construct(Connection $connection, $sessionInited)
     {
         $this->connection = $connection;
-        $this->request = $request;
+        $this->request = $connection->getRequest();
+        if(!$sessionInited){
+            $this->init();
+            return;
+        }
         $this->enterPollingMode();
-    }
-
-    protected function enterPollingMode()
-    {
-        $response = new ResponseChunkStart();
-        $response->headers->set('Access-Control-Allow-Origin', $this->request->headers->get('Origin'));
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');
-        $this->connection->write($response);
         $this->connection->setTimeout($this->defuleTimeout, array($this, 'onTimeout'));
     }
 
+    abstract protected function init();
+
+    abstract protected function enterPollingMode();
 
     abstract public function onTimeout();
 
@@ -45,7 +44,6 @@ abstract class HttpPolling
         $this->connection->clearTimeout();
         $this->connection->write(new ResponseChunk($content));
         $this->connection->write(new ResponseChunkEnd(), true);
-        echo "aaaa\n";
     }
 
 }

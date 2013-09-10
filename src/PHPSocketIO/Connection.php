@@ -9,7 +9,7 @@ class Connection
     protected $eventBufferEvent = null;
 
     protected $request;
-
+    protected $eventHTTPRequest;
     protected $namespace;
 
     protected $timeoutEvent;
@@ -29,31 +29,32 @@ class Connection
      */
     protected $protocolProcessor;
 
-    public function __construct(\EventBase $baseEvent, \EventHttpRequest $request, $namespace, $eventBufferEventGCCallback)
+    public function __construct(\EventBase $baseEvent, $namespace, $eventBufferEventGCCallback)
     {
         $this->baseEvent = $baseEvent;
         $this->namespace = $namespace;
         $this->eventBufferEventGCCallback = $eventBufferEventGCCallback;
-        $this->request = $request;
     }
 
-    public function parseHTTP()
+    public function parseHTTP(\EventHttpRequest $eventHTTPRequest)
     {
-        new Http\Http($this);
+        $this->eventHTTPRequest = $eventHTTPRequest;
+        $this->request = Http\Http::init($this, $eventHTTPRequest);
+        Http\Http::handleRequest($this, $this->request);
     }
 
     public function sendResponse(Http\Response $response)
     {
-        $buffer = $this->request->getOutputBuffer();
+        $buffer = $this->eventHTTPRequest->getOutputBuffer();
         $buffer->add($response->getContent());
-        $this->request->sendReply($response->getStatusCode(), $response->getStatusCode());
-        $this->request->free();
+        $this->eventHTTPRequest->sendReply($response->getStatusCode(), $response->getStatusCode());
+        $this->eventHTTPRequest->free();
     }
 
     protected function getEventBufferEvent()
     {
         if(!$this->eventBufferEvent){
-            $this->eventBufferEvent = $this->request->getEventBufferEvent();
+            $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
             }, function(){
                 if($this->shutdownAfterSend){
@@ -71,6 +72,10 @@ class Connection
         $this->getEventBufferEvent()->write($response);
     }
 
+    /**
+     *
+     * @return Http\Request
+     */
     public function getRequest()
     {
         return $this->request;
@@ -79,7 +84,7 @@ class Connection
     public function getRemote()
     {
         if(!$this->remote){
-            $this->request->getEventHttpConnection()->getPeer($address, $port);
+            $this->eventHTTPRequest->getEventHttpConnection()->getPeer($address, $port);
             $this->remote = array($address, $port);
         }
         return $this->remote;
@@ -91,21 +96,25 @@ class Connection
 
     public function free()
     {
-        if(!$this->request){
+        if(!$this->baseEvent){
             return;
         }
         $this->clearTimeout();
-        $this->unregisterEvent();
+        if($this->request->getSession()){
+           $this->request->getSession()->save();
+        }
         if($this->eventBufferEvent){
-            call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent, $this->request);
+            call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent, $this->eventHTTPRequest);
         }
         $this->baseEvent = null;
         $this->eventBufferEvent = null;
         $this->request = null;
+        $this->eventHTTPRequest = null;
         $this->onReceiveCallbacks = null;
         $this->onWriteBufferEmptyCallbacks = null;
         $this->eventBufferEventGCCallback = null;
-
+        $this->onReceiveCallbacks = null;
+        $this->unregisterEvent();
     }
 
     public function setTimeout($timer, $callback)
@@ -137,7 +146,7 @@ class Connection
     public function on($eventName, $callback)
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener($eventName, $callback, $this);
+        $dispatcher->addListener("client.$eventName", $callback, $this);
     }
 
     public function onRecieve($callback)

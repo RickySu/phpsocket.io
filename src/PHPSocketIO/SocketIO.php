@@ -1,5 +1,6 @@
 <?php
 namespace PHPSocketIO;
+use Symfony\Component\HttpFoundation\Session;
 
 class SocketIO
 {
@@ -14,6 +15,10 @@ class SocketIO
     protected $onConnectCallback;
 
     protected $namespace = 'socket.io';
+
+    protected $httpRequests = [];
+
+    protected $sessionArray;
 
     public function __construct(\EventBase $baseEvent = null)
     {
@@ -66,20 +71,50 @@ class SocketIO
         return $this;
     }
 
+    public function onRequest($query, $callback)
+    {
+        $this->httpRequests[] = [$query, $callback];
+        return $this;
+    }
+
+    protected function initSession()
+    {
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener('request.init.session', function(Event\RequestEvent $requestEvent){
+            $request = $requestEvent->getRequest();
+            $request->setSession(
+                    new Session\Session(
+                            new SessionStorage\MemoryStorage()
+                    )
+            );
+        });
+    }
+
     protected function createEventListener()
     {
         $this->eventHttp = new \EventHttp($this->baseEvent);
         $this->eventHttp->bind($this->listenHost, $this->listenPort);
+        $this->initSession();
         $this->eventHttp->setDefaultCallback(function($request){
-            echo "on Connected\n";
-            $connection = new Connection($this->baseEvent, $request, $this->namespace, function(\EventBufferEvent $event, \EventHttpRequest $request) {
+            $connection = new Connection($this->baseEvent, $this->namespace, function(\EventBufferEvent $event) use($request) {
                 $this->eventBufferEvents[]=$event;
                 $this->requests[]=$request;
                 $this->baseEvent->stop();
             });
+            $connection->parseHTTP($request);
             call_user_func($this->onConnectCallback, $connection);
-            $connection->parseHTTP();
         });
+        foreach($this->httpRequests as $httpRequest){
+            list($query, $callback) = $httpRequest;
+            $this->eventHttp->setCallback($query, function($request) use($callback){
+                $connection = new Connection($this->baseEvent, $this->namespace, function(\EventBufferEvent $event) use($request) {
+                    $this->eventBufferEvents[]=$event;
+                    $this->requests[]=$request;
+                    $this->baseEvent->stop();
+                });
+                $callback($connection, $request);
+            });
+        }
     }
 
     public function __destruct()
