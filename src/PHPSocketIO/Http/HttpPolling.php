@@ -3,6 +3,7 @@
 namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
+use PHPSocketIO\Event;
 
 abstract class HttpPolling
 {
@@ -30,7 +31,20 @@ abstract class HttpPolling
             return;
         }
         $this->enterPollingMode();
+        $this->initEvent();
         $this->connection->setTimeout($this->defuleTimeout, array($this, 'onTimeout'));
+    }
+
+    protected function initEvent()
+    {
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent){
+            $message = $messageEvent->getMessage();
+            $this->writeContent("5:::".json_encode(array(
+                'name' => $message['event'],
+                'args' => array($message['message']),
+            )));
+        }, $this->connection);
     }
 
     abstract protected function init();

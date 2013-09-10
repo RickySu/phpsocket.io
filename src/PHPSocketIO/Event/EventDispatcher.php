@@ -25,6 +25,7 @@ class EventDispatcher
     protected function brocast($eventName, Event $event = null) {
         foreach($this->events[$eventName] as &$eventGroup){
             foreach($eventGroup as &$listener){
+                echo "calling...$eventName\n";
                 $listener($event);
                 if($event && $event->isPropagationStopped()){
                     return;
@@ -37,11 +38,19 @@ class EventDispatcher
         if(!isset($this->events[$eventName])){
             return;
         }
+
+        if(!$event){
+            $event = new Event();
+        }
+
+        $event->setName($eventName);
+
         if($connection === null)
         {
             $this->brocast($eventName, $event);
             return;
         }
+
         list($address, $port) = $connection->getRemote();
         if(!isset($this->events[$eventName]["$address:$port"])){
             return;
@@ -91,7 +100,7 @@ class EventDispatcher
         if(!isset($this->events[$eventName])){
             return;
         }
-        
+
         if($connection){
             list($address, $port) = $connection->getRemote();
         }

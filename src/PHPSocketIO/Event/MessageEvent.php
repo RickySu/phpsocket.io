@@ -9,7 +9,7 @@ use PHPSocketIO\Http;
  *
  * @author ricky
  */
-class ClientEvent extends Event
+class MessageEvent extends Event
 {
 
     protected $message;

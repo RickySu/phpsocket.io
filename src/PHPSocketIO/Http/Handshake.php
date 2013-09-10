@@ -67,8 +67,10 @@ class Handshake
                 if(!isset($eventData['name']) && !isset($eventData['args'])){
                     return new Response('bad protocol', 400);
                 }
+                echo "SSSS>>>";
                 $dispatcher = Event\EventDispatcher::getDispatcher();
-                $dispatcher->dispatch("client.{$eventData['name']}", new Event\ClientEvent($eventData['args']));
+                $dispatcher->dispatch("client.{$eventData['name']}", new Event\MessageEvent($eventData['args'][0]));
+                echo "<<<\n";
                 break;
         }
         return new Response('1');

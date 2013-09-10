@@ -65,6 +65,18 @@ class SocketIO
         }
     }
 
+    public function emit($eventName, $message)
+    {
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->dispatch(
+            "server.emit",
+            new Event\MessageEvent(array(
+                'event' => $eventName,
+                'message' => $message,
+            ))
+        );
+    }
+
     public function onConnect($callback)
     {
         $this->onConnectCallback = $callback;

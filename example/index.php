@@ -11,8 +11,13 @@ use PHPSocketIO\Event;
 $socketio = new SocketIO();
 $socketio
         ->listen(8080)
-        ->onConnect(function(Connection $connection) {
-            echo "connected\n";
+        ->onConnect(function(Connection $connection) use($socketio){
+            echo "connected {$connection->getRemote()[0]}:{$connection->getRemote()[1]}\n";
+            $connection->on('msg', function(Event\MessageEvent $messageEvent) use($socketio){
+                $message = $messageEvent->getMessage();
+                $socketio->emit('update', $message);
+                print_r($message);
+            });
         })
         ->onRequest('/hello', function($connection, \EventHttpRequest $request) {
                 //$connection = $event->getConnection();
