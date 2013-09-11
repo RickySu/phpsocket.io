@@ -1,32 +1,23 @@
 <?php
-
 namespace PHPSocketIO\Http;
-
-use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
 
 class HttpJsonpPolling extends HttpPolling
 {
 
-    protected function init()
+    protected function parseClientEmitData()
     {
-        $response = new Response('io.j[0]("1::");');
-        $response->headers->set('X-XSS-Protection', 0);
-        $this->connection->write($response);
-    }
-    protected function enterPollingMode()
-    {
-        $response = new ResponseChunkStart();
-        $response->headers->set('X-XSS-Protection', 0);
-        $this->connection->write($response);
+        return json_decode($this->connection->getRequest()->request->get('d'), true);
     }
 
-    protected function writeContent($content)
+    protected function generateResponseData($content)
     {
-        parent::writeContent('io.j[0]('.  json_encode($content).');');
+        return 'io.j[0](' . json_encode($content) . ');';
     }
 
-    public function onTimeout() {
-        $this->writeContent(ProtocolBuilder::Noop());
+    protected function setResponseHeaders($response)
+    {
+        $response->headers->set('X-XSS-Protection', 0);
+        return $response;
     }
 
 }

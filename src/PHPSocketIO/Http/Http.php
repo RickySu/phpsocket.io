@@ -44,7 +44,8 @@ class Http
             $SERVER['QUERY_STRING'] = '';
         }
         $GET = static::parseGET($SERVER['QUERY_STRING']);
-        $POST = static::parsePOST($eventHTTPRequest->getInputBuffer()->read(4096));
+        $BODY = $eventHTTPRequest->getInputBuffer()->read(4096);
+        $POST = static::parsePOST($BODY);
         $SERVER['REQUEST_METHOD'] = array_search($eventHTTPRequest->getCommand(), array(
             'GET' => \EventHttpRequest::CMD_GET ,
             'POST' => \EventHttpRequest::CMD_POST ,
@@ -56,7 +57,7 @@ class Http
             'CONNECT ' => \EventHttpRequest::CMD_CONNECT ,
             'PATCH ' => \EventHttpRequest::CMD_PATCH ,
         ));
-        return new Request($GET, $POST, array(), $COOKIE, array(), $SERVER, '');
+        return new Request($GET, $POST, array(), $COOKIE, array(), $SERVER, $BODY);
     }
 
     static protected function parseGET($rawGET)

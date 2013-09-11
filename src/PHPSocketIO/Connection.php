@@ -119,7 +119,6 @@ class Connection
 
     public function setTimeout($timer, $callback)
     {
-        echo "set tomeout: $timer\n";
          $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use($callback){
              $callback();
              $this->clearTimeout();

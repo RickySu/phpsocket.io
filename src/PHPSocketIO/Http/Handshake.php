@@ -12,8 +12,8 @@ class Handshake
     const PROTOCOL_JSONP_POLLING = 'jsonp-polling';
 
     protected static $validTransportID = array(
-        /*self::PROTOCOL_WEBSOCKET,
-        self::PROTOCOL_XHR_POLLING,*/
+//        self::PROTOCOL_WEBSOCKET,
+        self::PROTOCOL_XHR_POLLING,
         self::PROTOCOL_HTMLFILE,
         self::PROTOCOL_JSONP_POLLING,
     );
@@ -47,30 +47,23 @@ class Handshake
         if(!in_array($requestDocSplit[2], static::$validTransportID)){
             return new Response('bad protocol', 400);
         }
-        if($request->isMethod('GET')){
-            static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
-            return;
-        }
-
-        return static::processProtocol(json_decode($request->request->get('d'), true));
+        static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
     }
 
-    protected static function processProtocol($data)
+    public static function processProtocol($data)
     {
         if(!preg_match('/^(.*?):(.*?):(.*?):(.*?)$/i', $data, $match)){
-            return new Response('bad protocol', 400);
+            return new Response('bad protocol', 404);
         }
         list($raw, $type, $id, $endpoint, $jsonData) = $match;
         switch($type){
             case 5:    //Event
                 $eventData = json_decode($jsonData, true);
                 if(!isset($eventData['name']) && !isset($eventData['args'])){
-                    return new Response('bad protocol', 400);
+                    return new Response('bad protocol', 402);
                 }
-                echo "SSSS>>>";
                 $dispatcher = Event\EventDispatcher::getDispatcher();
                 $dispatcher->dispatch("client.{$eventData['name']}", new Event\MessageEvent($eventData['args'][0]));
-                echo "<<<\n";
                 break;
         }
         return new Response('1');
@@ -89,11 +82,9 @@ class Handshake
 
         switch ($transportId){
             case 'jsonp-polling':
-                new HttpJsonpPolling($connection, $sessionInited);
-                break;
+                return new HttpJsonpPolling($connection, $sessionInited);
             case 'xhr-polling':
-                new HttpXHRPolling($connection, $sessionInited);
-                break;
+                return new HttpXHRPolling($connection, $sessionInited);
         }
     }
 

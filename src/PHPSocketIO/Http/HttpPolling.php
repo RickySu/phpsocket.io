@@ -4,6 +4,7 @@ namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
 use PHPSocketIO\Event;
+use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
 
 abstract class HttpPolling
 {
@@ -30,10 +31,24 @@ abstract class HttpPolling
             $this->init();
             return;
         }
+        if($this->request->isMethod('POST')){
+            $this->processPOSTMethod();
+            return;
+        }
         $this->enterPollingMode();
         $this->initEvent();
         $this->connection->setTimeout($this->defuleTimeout, array($this, 'onTimeout'));
+        return;
     }
+
+    protected function processPOSTMethod()
+    {
+        Handshake::processProtocol($this->parseClientEmitData());
+        $response = $this->setResponseHeaders(new Response('1'));
+        $this->connection->write($response);
+    }
+
+    abstract protected function parseClientEmitData();
 
     protected function initEvent()
     {
@@ -47,14 +62,33 @@ abstract class HttpPolling
         }, $this->connection);
     }
 
-    abstract protected function init();
 
-    abstract protected function enterPollingMode();
+    protected function init()
+    {
+        $response = $this->setResponseHeaders(
+                new Response($this->generateResponseData(ProtocolBuilder::Connect()))
+        );
+        $this->connection->write($response);
+    }
 
-    abstract public function onTimeout();
+    protected function enterPollingMode()
+    {
+        $response = $this->setResponseHeaders(new ResponseChunkStart());
+        $this->connection->write($response);
+    }
+
+    abstract protected function generateResponseData($content);
+
+    abstract protected function setResponseHeaders($response);
+
+    public function onTimeout()
+    {
+        $this->writeContent(ProtocolBuilder::Noop());
+    }
 
     protected function writeContent($content)
     {
+        $content = $this->generateResponseData($content);
         $this->connection->clearTimeout();
         $this->connection->write(new ResponseChunk($content));
         $this->connection->write(new ResponseChunkEnd(), true);
