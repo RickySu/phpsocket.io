@@ -135,4 +135,12 @@ class SocketIO
         $this->eventListener = null;
         $this->onConnectCallback = null;
     }
+
+    public function on($eventName, $callback)
+    {
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener("client.$eventName", $callback);
+        return $this;
+    }
+
 }

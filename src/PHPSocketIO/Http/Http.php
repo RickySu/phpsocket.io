@@ -2,6 +2,9 @@
 namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
+use PHPSocketIO\Response\Response;
+use PHPSocketIO\Request\Request;
+use PHPSocketIO\Protocol\Handshake;
 
 class Http
 {

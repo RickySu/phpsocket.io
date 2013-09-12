@@ -1,5 +1,5 @@
 <?php
-namespace PHPSocketIO\Http;
+namespace PHPSocketIO\Response;
 
 /**
  * Description of Request

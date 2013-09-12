@@ -3,76 +3,51 @@
 namespace PHPSocketIO\Http;
 
 use PHPSocketIO\Connection;
-use PHPSocketIO\Event;
 use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
+use PHPSocketIO\Event;
+use PHPSocketIO\Response\ResponseWebSocketFrame;
+use PHPSocketIO\Protocol\Handshake;
 
-class HttpWebSocket extends HttpPolling
+class HttpWebSocket
 {
 
-    const MIN_WS_VERSION = 13;
-    const MAGIC_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+    protected $websocket;
 
     public function __construct(Connection $connection, $sessionInited)
     {
         $this->connection = $connection;
-        $this->request = $connection->getRequest();
-        $this->upgradeProtocol();
-        //$this->initEvent();
-        //$this->connection->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
-        return;
-    }
-
-    protected function upgradeProtocol()
-    {
-        $request = $this->connection->getRequest();
-        $key = $request->headers->get('Sec-WebSocket-Key');
-        if(
-                $request->headers->get('Upgrade') != 'websocket' ||
-                !$this->checkProtocolVrsion($request) ||
-                !$this->checkSecKey($key)
-          ){
-            $this->connection->write( new Response('bad protocol', 400), true);
+        $this->websocket = new WebSocket\WebSocket();
+        if (!($handshakeResponse = $this->websocket->getHandshakeReponse($connection->getRequest()))) {
+            $this->connection->write(new Response('bad protocol', 400), true);
+            return;
         }
-        $acceptKey = $this->generateAcceptKey($key);
-        $response = new ResponseWebSocket(null, 101);
-        $response->headers->set('Connection', 'Upgrade');
-        $response->headers->set('Sec-WebSocket-Accept', $acceptKey);
-        $response->headers->set('Upgrade', 'websocket');
-        $response->headers->remove('Content-Length');
-        $response->headers->remove('Cache-Control');
-        $response->headers->remove('Date');
-        $response->setContent($this->generateResponseData(ProtocolBuilder::Connect()));
-        $this->connection->write($response);
+        $this->connection->write($handshakeResponse);
+        $this->sendData(ProtocolBuilder::Connect());
+        $this->initEvent();
+        //$this->connection->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
     }
 
-    protected function generateAcceptKey($key)
+    protected function sendData($data)
     {
-        return base64_encode(sha1($key.static::MAGIC_GUID, true));
+        $this->connection->write(new ResponseWebSocketFrame(new WebSocket\Frame($data)));
     }
 
-    protected function checkSecKey($key)
+    protected function initEvent()
     {
-        return strlen(base64_decode($key)) == 16;
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener("socket.receive", function(Event\MessageEvent $messageEvent) {
+                    $message = $messageEvent->getMessage();
+                    $frame = $this->websocket->onMessage($message);
+                    Handshake::processProtocol($frame->getData(), $this->connection);
+                }, $this->connection);
+
+        $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent) {
+                    $message = $messageEvent->getMessage();
+                    $this->sendData(ProtocolBuilder::Event(array(
+                                'name' => $message['event'],
+                                'args' => array($message['message']),
+                    )));
+                }, $this->connection);
     }
 
-    protected function checkProtocolVrsion(Request $request)
-    {
-        return $request->headers->get('Sec-WebSocket-Version', 0) >= static::MIN_WS_VERSION;
-    }
-
-    protected function generateResponseData($content)
-    {
-        echo "output:$content\n";
-        return pack('CC', 0x81, strlen($content)).$content;
-    }
-
-    protected function parseClientEmitData()
-    {
-
-    }
-
-    protected function setResponseHeaders($response)
-    {
-
-    }
 }

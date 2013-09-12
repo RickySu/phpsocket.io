@@ -5,6 +5,12 @@ namespace PHPSocketIO\Http;
 use PHPSocketIO\Connection;
 use PHPSocketIO\Event;
 use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
+use PHPSocketIO\Response\Response;
+use PHPSocketIO\Response\ResponseChunk;
+use PHPSocketIO\Response\ResponseChunkStart;
+use PHPSocketIO\Response\ResponseChunkEnd;
+use PHPSocketIO\Request\Request;
+use PHPSocketIO\Protocol\Handshake;
 
 abstract class HttpPolling
 {
@@ -43,7 +49,7 @@ abstract class HttpPolling
 
     protected function processPOSTMethod()
     {
-        Handshake::processProtocol($this->parseClientEmitData());
+        Handshake::processProtocol($this->parseClientEmitData(), $this->connection);
         $response = $this->setResponseHeaders(new Response('1'));
         $this->connection->write($response);
     }

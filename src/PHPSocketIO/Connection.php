@@ -43,7 +43,7 @@ class Connection
         Http\Http::handleRequest($this, $this->request);
     }
 
-    public function sendResponse(Http\Response $response)
+    public function sendResponse(Response\Response $response)
     {
         $buffer = $this->eventHTTPRequest->getOutputBuffer();
         $buffer->add($response->getContent());
@@ -56,25 +56,22 @@ class Connection
         if(!$this->eventBufferEvent){
             $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
-                echo "read\n";
                 $data  = $this->eventBufferEvent->read(4096);
-                echo strlen($data);
-                file_put_contents("/home/ricky/packet", $data);
-                //print_r(substr($data, 2));
-                echo "\n";
+                $dispatcher = Event\EventDispatcher::getDispatcher();
+                $messageEvent = new Event\MessageEvent($data, $this);
+                $dispatcher->dispatch("socket.receive", $messageEvent, $this);
             }, function(){
                 if($this->shutdownAfterSend){
                     $this->free();
                 }
             }, function(){
-                echo "aaa";
             });
             $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
         }
         return $this->eventBufferEvent;
     }
 
-    public function write(Http\ResponseInterface $response, $shutdownAfterSend = false)
+    public function write(Response\ResponseInterface $response, $shutdownAfterSend = false)
     {
         $this->shutdownAfterSend = $shutdownAfterSend;
         $this->getEventBufferEvent()->write($response);
@@ -82,7 +79,7 @@ class Connection
 
     /**
      *
-     * @return Http\Request
+     * @return Request\Request
      */
     public function getRequest()
     {
@@ -154,6 +151,7 @@ class Connection
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("client.$eventName", $callback, $this);
+        return $this;
     }
 
     public function emit($eventName, $message)
@@ -164,7 +162,7 @@ class Connection
             new Event\MessageEvent(array(
                 'event' => $eventName,
                 'message' => $message,
-            )),
+            ), $this),
             $this
         );
     }
@@ -172,11 +170,13 @@ class Connection
     public function onRecieve($callback)
     {
         $this->onReceiveCallbacks[]=$callback;
+        return $this;
     }
 
     public function onWriteBufferEmpty($callback)
     {
         $this->onWriteBufferEmptyCallbacks[]=$callback;
+        return $this;
     }
 
     protected function unregisterEvent()

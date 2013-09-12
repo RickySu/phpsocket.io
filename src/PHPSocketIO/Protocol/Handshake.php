@@ -1,8 +1,11 @@
 <?php
-namespace PHPSocketIO\Http;
+namespace PHPSocketIO\Protocol;
 
 use PHPSocketIO\Connection;
 use PHPSocketIO\Event;
+use PHPSocketIO\Response\Response;
+use PHPSocketIO\Request\Request;
+use PHPSocketIO\Http;
 
 class Handshake
 {
@@ -14,8 +17,8 @@ class Handshake
     protected static $validTransportID = array(
         self::PROTOCOL_WEBSOCKET,
         self::PROTOCOL_XHR_POLLING,
-//        self::PROTOCOL_HTMLFILE,
-//        self::PROTOCOL_JSONP_POLLING,
+        self::PROTOCOL_HTMLFILE,
+        self::PROTOCOL_JSONP_POLLING,
     );
 
     public static function initialize(Connection $connection, Request $request)
@@ -50,7 +53,7 @@ class Handshake
         return static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
     }
 
-    public static function processProtocol($data)
+    public static function processProtocol($data, Connection $connection)
     {
         if(!preg_match('/^(.*?):(.*?):(.*?):(.*?)$/i', $data, $match)){
             return new Response('bad protocol', 404);
@@ -63,7 +66,7 @@ class Handshake
                     return new Response('bad protocol', 402);
                 }
                 $dispatcher = Event\EventDispatcher::getDispatcher();
-                $dispatcher->dispatch("client.{$eventData['name']}", new Event\MessageEvent($eventData['args'][0]));
+                $dispatcher->dispatch("client.{$eventData['name']}", new Event\MessageEvent($eventData['args'][0], $connection));
                 break;
         }
         return new Response('1');
@@ -82,11 +85,11 @@ class Handshake
 
         switch ($transportId){
             case static::PROTOCOL_JSONP_POLLING:
-                return new HttpJsonpPolling($connection, $sessionInited);
+                return new Http\HttpJsonpPolling($connection, $sessionInited);
             case static::PROTOCOL_XHR_POLLING:
-                return new HttpXHRPolling($connection, $sessionInited);
+                return new Http\HttpXHRPolling($connection, $sessionInited);
             case static::PROTOCOL_WEBSOCKET:
-                return new HttpWebSocket($connection, $sessionInited);
+                return new Http\HttpWebSocket($connection, $sessionInited);
             default:
                 return new Response('bad protocol', 400);
         }

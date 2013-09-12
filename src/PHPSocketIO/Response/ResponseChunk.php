@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPSocketIO\Http;
+namespace PHPSocketIO\Response;
 
 class ResponseChunk implements ResponseInterface
 {
