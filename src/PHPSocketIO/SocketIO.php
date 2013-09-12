@@ -124,6 +124,7 @@ class SocketIO
                     $this->requests[]=$request;
                     $this->baseEvent->stop();
                 });
+                $connection->setEventHTTPRequest($request);
                 $callback($connection, $request);
             });
         }

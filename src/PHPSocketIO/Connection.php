@@ -38,9 +38,14 @@ class Connection
 
     public function parseHTTP(\EventHttpRequest $eventHTTPRequest)
     {
-        $this->eventHTTPRequest = $eventHTTPRequest;
+        $this->setEventHTTPRequest($eventHTTPRequest);
         $this->request = Http\Http::init($this, $eventHTTPRequest);
         Http\Http::handleRequest($this, $this->request);
+    }
+
+    public function setEventHTTPRequest(\eventHTTPRequest $eventHTTPRequest)
+    {
+        $this->eventHTTPRequest = $eventHTTPRequest;
     }
 
     public function sendResponse(Response\Response $response)
@@ -88,7 +93,7 @@ class Connection
 
     public function getRemote()
     {
-        if(!$this->remote){
+        if(!$this->remote && $this->eventHTTPRequest){
             $this->eventHTTPRequest->getEventHttpConnection()->getPeer($address, $port);
             $this->remote = array($address, $port);
         }
@@ -105,7 +110,7 @@ class Connection
             return;
         }
         $this->clearTimeout();
-        if($this->request->getSession()){
+        if($this->request && $this->request->getSession()){
            $this->request->getSession()->save();
         }
         if($this->eventBufferEvent){

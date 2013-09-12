@@ -5,7 +5,7 @@ $loader->add('PHPSocketIO', __DIR__ . '/../src');
 
 use PHPSocketIO\SocketIO;
 use PHPSocketIO\Connection;
-use PHPSocketIO\Http\Response;
+use PHPSocketIO\Response\Response;
 use PHPSocketIO\Event;
 
 $socketio = new SocketIO();
