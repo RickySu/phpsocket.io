@@ -37,7 +37,7 @@ abstract class HttpPolling
         }
         $this->enterPollingMode();
         $this->initEvent();
-        $this->connection->setTimeout($this->defuleTimeout, array($this, 'onTimeout'));
+        $this->connection->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
         return;
     }
 
@@ -55,20 +55,19 @@ abstract class HttpPolling
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent){
             $message = $messageEvent->getMessage();
-            $this->writeContent("5:::".json_encode(array(
+            $this->writeChunkEnd(ProtocolBuilder::Event(array(
                 'name' => $message['event'],
                 'args' => array($message['message']),
             )));
         }, $this->connection);
     }
 
-
     protected function init()
     {
         $response = $this->setResponseHeaders(
-                new Response($this->generateResponseData(ProtocolBuilder::Connect()))
+            new Response($this->generateResponseData(ProtocolBuilder::Connect()))
         );
-        $this->connection->write($response);
+        $this->connection->write($response, true);
     }
 
     protected function enterPollingMode()
@@ -81,12 +80,12 @@ abstract class HttpPolling
 
     abstract protected function setResponseHeaders($response);
 
-    public function onTimeout()
+    protected function onTimeout()
     {
-        $this->writeContent(ProtocolBuilder::Noop());
+        $this->writeChunkEnd(ProtocolBuilder::Noop());
     }
 
-    protected function writeContent($content)
+    protected function writeChunkEnd($content)
     {
         $content = $this->generateResponseData($content);
         $this->connection->clearTimeout();

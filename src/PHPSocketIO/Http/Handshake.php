@@ -12,10 +12,10 @@ class Handshake
     const PROTOCOL_JSONP_POLLING = 'jsonp-polling';
 
     protected static $validTransportID = array(
-//        self::PROTOCOL_WEBSOCKET,
+        self::PROTOCOL_WEBSOCKET,
         self::PROTOCOL_XHR_POLLING,
-        self::PROTOCOL_HTMLFILE,
-        self::PROTOCOL_JSONP_POLLING,
+//        self::PROTOCOL_HTMLFILE,
+//        self::PROTOCOL_JSONP_POLLING,
     );
 
     public static function initialize(Connection $connection, Request $request)
@@ -47,7 +47,7 @@ class Handshake
         if(!in_array($requestDocSplit[2], static::$validTransportID)){
             return new Response('bad protocol', 400);
         }
-        static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
+        return static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
     }
 
     public static function processProtocol($data)
@@ -81,10 +81,14 @@ class Handshake
         }
 
         switch ($transportId){
-            case 'jsonp-polling':
+            case static::PROTOCOL_JSONP_POLLING:
                 return new HttpJsonpPolling($connection, $sessionInited);
-            case 'xhr-polling':
+            case static::PROTOCOL_XHR_POLLING:
                 return new HttpXHRPolling($connection, $sessionInited);
+            case static::PROTOCOL_WEBSOCKET:
+                return new HttpWebSocket($connection, $sessionInited);
+            default:
+                return new Response('bad protocol', 400);
         }
     }
 

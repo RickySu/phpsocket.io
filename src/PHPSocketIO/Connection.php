@@ -56,16 +56,24 @@ class Connection
         if(!$this->eventBufferEvent){
             $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
+                echo "read\n";
+                $data  = $this->eventBufferEvent->read(4096);
+                echo strlen($data);
+                file_put_contents("/home/ricky/packet", $data);
+                //print_r(substr($data, 2));
+                echo "\n";
             }, function(){
                 if($this->shutdownAfterSend){
                     $this->free();
                 }
             }, function(){
+                echo "aaa";
             });
             $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
         }
         return $this->eventBufferEvent;
     }
+
     public function write(Http\ResponseInterface $response, $shutdownAfterSend = false)
     {
         $this->shutdownAfterSend = $shutdownAfterSend;
