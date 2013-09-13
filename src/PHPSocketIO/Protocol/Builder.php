@@ -14,6 +14,11 @@ class Builder
         return '1::';
     }
 
+    public static function Heartbeat()
+    {
+        return '2::';
+    }
+
     public static function Noop()
     {
         return '8::';

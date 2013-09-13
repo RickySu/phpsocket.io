@@ -11,7 +11,9 @@ use PHPSocketIO\Protocol\Handshake;
 class HttpWebSocket
 {
 
+    protected $heartbeatTimeout = 30;
     protected $websocket;
+    protected $connection;
 
     public function __construct(Connection $connection, $sessionInited)
     {
@@ -24,12 +26,21 @@ class HttpWebSocket
         $this->connection->write($handshakeResponse);
         $this->sendData(ProtocolBuilder::Connect());
         $this->initEvent();
-        //$this->connection->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
+        $this->setHeartbeatTimeout();
+    }
+
+    protected function setHeartbeatTimeout()
+    {
+        $this->connection->clearTimeout();
+        $this->connection->setTimeout($this->heartbeatTimeout, function(){
+            $this->sendData(ProtocolBuilder::Heartbeat());
+        });
     }
 
     protected function sendData($data)
     {
         $this->connection->write(new ResponseWebSocketFrame(new WebSocket\Frame($data)));
+        $this->setHeartbeatTimeout();
     }
 
     protected function initEvent()
@@ -37,7 +48,9 @@ class HttpWebSocket
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("socket.receive", function(Event\MessageEvent $messageEvent) {
                     $message = $messageEvent->getMessage();
-                    $frame = $this->websocket->onMessage($message);
+                    if(!($frame = $this->websocket->onMessage($message))){
+                        return;
+                    }
                     Handshake::processProtocol($frame->getData(), $this->connection);
                 }, $this->connection);
 

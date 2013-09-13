@@ -62,6 +62,7 @@ class Connection
             $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
                 $data  = $this->eventBufferEvent->read(4096);
+                file_put_contents('/home/ricky/packet', $data);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
                 $messageEvent = new Event\MessageEvent($data, $this);
                 $dispatcher->dispatch("socket.receive", $messageEvent, $this);
@@ -131,7 +132,6 @@ class Connection
     {
          $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use($callback){
              $callback();
-             $this->clearTimeout();
          });
          $this->timeoutEvent->data = $this->timeoutEvent;
          $this->timeoutEvent->addTimer($timer);

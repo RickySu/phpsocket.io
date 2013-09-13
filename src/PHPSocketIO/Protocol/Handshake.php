@@ -60,6 +60,8 @@ class Handshake
         }
         list($raw, $type, $id, $endpoint, $jsonData) = $match;
         switch($type){
+            case 2:    //Heartbeat
+                break;
             case 5:    //Event
                 $eventData = json_decode($jsonData, true);
                 if(!isset($eventData['name']) && !isset($eventData['args'])){

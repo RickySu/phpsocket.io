@@ -21,18 +21,13 @@ class WebSocket
         $this->messageQueue = new MessageQueue();
     }
 
-    public function onMessage($data)
-    {
-        $this->messageQueue->enqueue($data);
-        return Frame::parse($this->messageQueue);
-    }
-
     /**
      * @return Frame
      */
-    public function getFrame()
+    public function onMessage($data)
     {
-        return Frame::parse($messageQueue);
+        $this->messageQueue->add($data);
+        return Frame::parse($this->messageQueue);
     }
 
     public function getHandshakeReponse($request)
