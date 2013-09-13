@@ -26,6 +26,8 @@ class Frame
     protected $isCoalesced = false;
     protected $extendedPayload = '';
 
+    protected $isClosed = false;
+
     public static function parse(MessageQueue $data)
     {
         $frame = new static();
@@ -40,12 +42,30 @@ class Frame
     public static function generate($data)
     {
         $frame = new static($data);
+        return $frame;
+    }
+
+    public static function close($data)
+    {
+        $frame = new static($data, true, static::OP_CLOSE);
+        $frame->setClosed();
+        return $frame;
     }
 
     public function __construct($data = null, $final = true, $opcode = self::OP_TEXT)
     {
         $this->firstByte = ($final ? 0x80 : 0) + $opcode;
         $this->appendData($data);
+    }
+
+    public function setClosed($isClosed = true)
+    {
+        $this->isClosed = $isClosed;
+    }
+
+    public function isClosed()
+    {
+        return $this->isClosed;
     }
 
     public function setFirstByte($byte)

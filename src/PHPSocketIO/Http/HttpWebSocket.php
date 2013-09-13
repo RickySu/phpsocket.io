@@ -39,7 +39,10 @@ class HttpWebSocket
 
     protected function sendData($data)
     {
-        $this->connection->write(new ResponseWebSocketFrame(new WebSocket\Frame($data)));
+        if(!($data instanceof WebSocket\Frame)){
+            $data = WebSocket\Frame::generate($data);
+        }
+        $this->connection->write(new ResponseWebSocketFrame($data), $data->isClosed());
         $this->setHeartbeatTimeout();
     }
 
