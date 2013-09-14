@@ -51,7 +51,8 @@ class HttpWebSocket
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("socket.receive", function(Event\MessageEvent $messageEvent) {
                     $message = $messageEvent->getMessage();
-                    if(!($frame = $this->websocket->onMessage($message))){
+                    $frame = $this->websocket->onMessage($message);
+                    if(!($frame instanceof WebSocket\Frame)){
                         return;
                     }
                     Handshake::processProtocol($frame->getData(), $this->connection);

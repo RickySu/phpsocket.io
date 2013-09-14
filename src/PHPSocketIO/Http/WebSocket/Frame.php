@@ -40,7 +40,7 @@ class Frame
         $frame = new static();
         $frameSize = $frame->decode($data);
         if(!$frame->isCoalesced()){
-            return false;
+            return $frameSize;
         }
         $data->shift($frameSize);
         return $frame;
@@ -169,7 +169,7 @@ class Frame
                 return [0, 0];
             }
             $payloadLength = unpack("N2", $packedPayloadLength);
-            return [($packedPayloadLength[1] << 32) & $packedPayloadLength[2] + 8, 8];
+            return [($packedPayloadLength[1] << 32) | $packedPayloadLength[2] + 8, 8];
         }
     }
 
