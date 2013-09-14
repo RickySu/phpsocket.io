@@ -10,6 +10,10 @@ class MessageQueue
 {
     protected $data = '';
 
+    public function clear()
+    {
+        $this->data = '';
+    }
     public function add($data)
     {
         $this->data.=$data;
