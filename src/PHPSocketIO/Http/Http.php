@@ -1,20 +1,15 @@
 <?php
 namespace PHPSocketIO\Http;
 
-use PHPSocketIO\Connection;
+use PHPSocketIO\ConnectionInterface;
 use PHPSocketIO\Response\Response;
 use PHPSocketIO\Request\Request;
 use PHPSocketIO\Protocol\Handshake;
 
 class Http
 {
-    static public function init(Connection $connection, \EventHttpRequest $eventHTTPRequest)
-    {
-        $request = static::parseRequest($connection, $eventHTTPRequest);
-        return $request;
-    }
 
-    static public function handleRequest(Connection $connection, Request $request)
+    static public function handleRequest(ConnectionInterface $connection, Request $request)
     {
         $handshakeResult = Handshake::initialize($connection, $request);
 
@@ -28,18 +23,15 @@ class Http
         }
     }
 
-    static protected function parseRequest(Connection $connection, \EventHttpRequest $eventHTTPRequest)
+    static public function parseRequest($server, $headers, $content)
     {
-        $header = $eventHTTPRequest->getInputHeaders();
-        $SERVER = static::parseServer($header);
-        list($SERVER['REMOTE_ADDR'], $SERVER['REMOTE_PORT']) = $connection->getRemote();
-        if(isset($header['HTTP_COOKIE'])){
-            $COOKIE = static::parseCookie($header['HTTP_COOKIE']);
+        $SERVER = array_merge($server, static::parseServer($headers));
+        if(isset($headers['HTTP_COOKIE'])){
+            $COOKIE = static::parseCookie($headers['HTTP_COOKIE']);
         }
         else{
             $COOKIE = array();
         }
-        $SERVER['REQUEST_URI'] = $eventHTTPRequest->getUri();
         if(($pos = strpos('?', $SERVER['REQUEST_URI'])) !== false){
             $SERVER['QUERY_STRING'] = substr($SERVER['REQUEST_URI'], $pos+1);
         }
@@ -47,20 +39,8 @@ class Http
             $SERVER['QUERY_STRING'] = '';
         }
         $GET = static::parseGET($SERVER['QUERY_STRING']);
-        $BODY = $eventHTTPRequest->getInputBuffer()->read(4096);
-        $POST = static::parsePOST($BODY);
-        $SERVER['REQUEST_METHOD'] = array_search($eventHTTPRequest->getCommand(), array(
-            'GET' => \EventHttpRequest::CMD_GET ,
-            'POST' => \EventHttpRequest::CMD_POST ,
-            'HEAD' => \EventHttpRequest::CMD_HEAD ,
-            'PUT' => \EventHttpRequest::CMD_PUT ,
-            'DELETE' => \EventHttpRequest::CMD_DELETE ,
-            'OPTIONS' => \EventHttpRequest::CMD_OPTIONS ,
-            'TRACE ' => \EventHttpRequest::CMD_TRACE ,
-            'CONNECT ' => \EventHttpRequest::CMD_CONNECT ,
-            'PATCH ' => \EventHttpRequest::CMD_PATCH ,
-        ));
-        return new Request($GET, $POST, array(), $COOKIE, array(), $SERVER, $BODY);
+        $POST = static::parsePOST($content);
+        return new Request($GET, $POST, array(), $COOKIE, array(), $SERVER, $content);
     }
 
     static protected function parseGET($rawGET)

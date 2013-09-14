@@ -3,7 +3,7 @@ namespace PHPSocketIO;
 
 class Connection implements ConnectionInterface
 {
-    const READ_BUFFER_SIZE = 1024;
+    const MAX_INPUT = 4000000;   // 4MB
 
     protected $baseEvent;
     protected $eventBufferEvent = null;
@@ -39,7 +39,26 @@ class Connection implements ConnectionInterface
     public function parseHTTP(\EventHttpRequest $eventHTTPRequest)
     {
         $this->setEventHTTPRequest($eventHTTPRequest);
-        $this->request = Http\Http::init($this, $eventHTTPRequest);
+        $headers = $eventHTTPRequest->getInputHeaders();
+        $server = array(
+            'REQUEST_URI' => $eventHTTPRequest->getUri(),
+        );
+        list($server['REMOTE_ADDR'], $server['REMOTE_PORT']) = $this->getRemote();
+        $server['REQUEST_METHOD'] = array_search($eventHTTPRequest->getCommand(), array(
+            'GET' => \EventHttpRequest::CMD_GET ,
+            'POST' => \EventHttpRequest::CMD_POST ,
+            'HEAD' => \EventHttpRequest::CMD_HEAD ,
+            'PUT' => \EventHttpRequest::CMD_PUT ,
+            'DELETE' => \EventHttpRequest::CMD_DELETE ,
+            'OPTIONS' => \EventHttpRequest::CMD_OPTIONS ,
+            'TRACE ' => \EventHttpRequest::CMD_TRACE ,
+            'CONNECT ' => \EventHttpRequest::CMD_CONNECT ,
+            'PATCH ' => \EventHttpRequest::CMD_PATCH ,
+        ));
+        $this->request = Http\Http::parseRequest(
+                $server,
+                $headers,
+                $eventHTTPRequest->getOutputBuffer()->read(static::MAX_INPUT));
         Http\Http::handleRequest($this, $this->request);
     }
 
