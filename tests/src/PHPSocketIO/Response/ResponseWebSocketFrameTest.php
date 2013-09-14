@@ -11,7 +11,7 @@ class ResponseWebSocketFrameTest extends \PHPUnit_Framework_TestCase
 
     public function test__to_string()
     {
-        $response = new ResponseWebSocketFrame(new Frame());
+        $response = new ResponseWebSocketFrame(Frame::generate('test'));
         $this->assertNotEmpty($response);
     }
 

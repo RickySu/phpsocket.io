@@ -10,6 +10,11 @@ class MessageQueue
 {
     protected $data = '';
 
+    public function __construct($data = '')
+    {
+        $this->data = $data;
+    }
+
     public function clear()
     {
         $this->data = '';

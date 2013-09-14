@@ -28,8 +28,15 @@ class Frame
 
     protected $isClosed = false;
 
-    public static function parse(MessageQueue $data)
+    /**
+     *
+     * @return Frame
+     */
+    public static function parse($data)
     {
+        if(!($data instanceof MessageQueue)){
+            $data = new MessageQueue($data);
+        }
         $frame = new static();
         $frameSize = $frame->decode($data);
         if(!$frame->isCoalesced()){
@@ -39,12 +46,22 @@ class Frame
         return $frame;
     }
 
+    /**
+     *
+     * @param string $data
+     * @return Frame
+     */
     public static function generate($data)
     {
         $frame = new static($data);
         return $frame;
     }
 
+    /**
+     *
+     * @param string $data
+     * @return Frame
+     */
     public static function close($data)
     {
         $frame = new static($data, true, static::OP_CLOSE);
@@ -52,7 +69,7 @@ class Frame
         return $frame;
     }
 
-    public function __construct($data = null, $final = true, $opcode = self::OP_TEXT)
+    protected function __construct($data = null, $final = true, $opcode = self::OP_TEXT)
     {
         $this->firstByte = ($final ? 0x80 : 0) + $opcode;
         $this->appendData($data);
@@ -241,7 +258,7 @@ class Frame
         }
 
         //use 4 bytes extended payload
-        $secondByte |= 126;
+        $secondByte |= 127;
         $extendedPayload = pack("NN", $size >> 32, $size & 0xffffffff);
     }
 
