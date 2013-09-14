@@ -38,7 +38,7 @@ class WebSocket
                 !$this->checkProtocolVrsion($request) ||
                 !$this->checkSecKey($key)
           ){
-            $this->connection->write( new Response('bad protocol', 400), true);
+            return false;
         }
         $acceptKey = $this->generateAcceptKey($key);
         $response = new ResponseWebSocket();
