@@ -24,7 +24,7 @@ class ResponseChunkStart extends HttpFoundation\Response implements ResponseInte
             sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText)."\r\n".
             $this->headers."\r\n";
         if($this->getContent()!==''){
-            $response.=printf("%x\r\n%s\r\n", strlen($this->getContent()), $this->getContent());
+            $response.=sprintf("%x\r\n%s\r\n", strlen($this->getContent()), $this->getContent());
         }
         return $response;
     }

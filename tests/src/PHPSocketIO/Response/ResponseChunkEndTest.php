@@ -1,5 +1,5 @@
 <?php
-namespace PHPSocketIO\HTTP;
+namespace PHPSocketIO\Response;
 
 /**
  * Test class for Request.
