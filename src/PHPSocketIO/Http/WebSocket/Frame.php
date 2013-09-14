@@ -68,6 +68,11 @@ class Frame
         return $this->isClosed;
     }
 
+    public function getOpcode()
+    {
+        return $this->firstByte & 0x7f;
+    }
+
     public function setFirstByte($byte)
     {
         $this->firstByte = $byte;

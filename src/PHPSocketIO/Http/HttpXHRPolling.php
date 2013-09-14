@@ -6,7 +6,7 @@ class HttpXHRPolling extends HttpPolling
 
     protected function parseClientEmitData()
     {
-        return $this->connection->getRequest()->getContent();
+        return $this->request->getContent();
     }
 
     protected function generateResponseData($content)
@@ -17,7 +17,7 @@ class HttpXHRPolling extends HttpPolling
     protected function setResponseHeaders($response)
     {
         $response->headers->set('Content-Type', 'text/plain');
-        $response->headers->set('Access-Control-Allow-Origin', $this->connection->getRequest()->headers->get('Origin'));
+        $response->headers->set('Access-Control-Allow-Origin', $this->request->headers->get('Origin'));
         $response->headers->set('Access-Control-Allow-Credentials', 'true');
         return $response;
     }

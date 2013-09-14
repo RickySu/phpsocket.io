@@ -1,7 +1,7 @@
 <?php
 namespace PHPSocketIO;
 
-class Connection
+class Connection implements ConnectionInterface
 {
     const READ_BUFFER_SIZE = 1024;
 

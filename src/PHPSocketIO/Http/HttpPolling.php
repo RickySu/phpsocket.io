@@ -2,7 +2,7 @@
 
 namespace PHPSocketIO\Http;
 
-use PHPSocketIO\Connection;
+use PHPSocketIO\ConnectionInterface;
 use PHPSocketIO\Event;
 use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
 use PHPSocketIO\Response\Response;
@@ -17,7 +17,7 @@ abstract class HttpPolling
 
     /**
      *
-     * @var Connection
+     * @var ConnectionInterface
      */
     protected $connection;
 
@@ -29,7 +29,7 @@ abstract class HttpPolling
 
     protected $defuleTimeout = 10;
 
-    public function __construct(Connection $connection, $sessionInited)
+    public function __construct(ConnectionInterface $connection, $sessionInited)
     {
         $this->connection = $connection;
         $this->request = $connection->getRequest();
@@ -49,7 +49,7 @@ abstract class HttpPolling
 
     protected function processPOSTMethod()
     {
-        Handshake::processProtocol($this->parseClientEmitData(), $this->connection);
+        Handshake::processProtocol($this->parseClientEmitData(), $this->connection->getRequest());
         $response = $this->setResponseHeaders(new Response('1'));
         $this->connection->write($response);
     }

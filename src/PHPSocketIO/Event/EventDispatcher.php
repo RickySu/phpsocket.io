@@ -3,7 +3,7 @@
 namespace PHPSocketIO\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use PHPSocketIO\Connection;
+use PHPSocketIO\ConnectionInterface;
 
 class EventDispatcher
 {
@@ -36,7 +36,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatch($eventName, Event $event = null, Connection $connection = null)
+    public function dispatch($eventName, Event $event = null, ConnectionInterface $connection = null)
     {
         if (!isset($this->events[$eventName])) {
             return;
@@ -65,7 +65,7 @@ class EventDispatcher
         }
     }
 
-    public function addListener($eventName, $listener, Connection $connection = null, $highPriority = false)
+    public function addListener($eventName, $listener, ConnectionInterface $connection = null, $highPriority = false)
     {
         if ($connection) {
             list($address, $port) = $connection->getRemote();
@@ -84,7 +84,7 @@ class EventDispatcher
         $this->groupEvents["$address:$port"][$eventName] = true;
     }
 
-    public function removeGroupListener(Connection $connection)
+    public function removeGroupListener(ConnectionInterface $connection)
     {
         list($address, $port) = $connection->getRemote();
         if (!isset($this->groupEvents["$address:$port"])) {
@@ -96,7 +96,7 @@ class EventDispatcher
         unset($this->groupEvents["$address:$port"]);
     }
 
-    public function removeListener($eventName, Connection $connection = null, $listener = null)
+    public function removeListener($eventName, ConnectionInterface $connection = null, $listener = null)
     {
         if (!isset($this->events[$eventName])) {
             return;

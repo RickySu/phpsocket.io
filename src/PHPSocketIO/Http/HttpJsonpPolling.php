@@ -6,7 +6,7 @@ class HttpJsonpPolling extends HttpPolling
 
     protected function parseClientEmitData()
     {
-        return json_decode($this->connection->getRequest()->request->get('d'), true);
+        return json_decode($this->request->request->get('d'), true);
     }
 
     protected function generateResponseData($content)
