@@ -24,14 +24,15 @@ class EventDispatcher
         return self::$dispatcher;
     }
 
-    protected function brocast($eventName, Event $event = null)
+    protected function brocast(Event $event)
     {
+        $eventName = $event->getName();
         foreach ($this->events[$eventName] as &$eventGroup) {
             foreach ($eventGroup as &$listener) {
-                $listener($event);
                 if ($event && $event->isPropagationStopped()) {
                     return;
                 }
+                $listener($event);
             }
         }
     }
@@ -49,7 +50,7 @@ class EventDispatcher
         $event->setName($eventName);
 
         if ($connection === null) {
-            $this->brocast($eventName, $event);
+            $this->brocast($event);
             return;
         }
 
@@ -58,10 +59,10 @@ class EventDispatcher
             return;
         }
         foreach ($this->events[$eventName]["$address:$port"] as &$listener) {
-            $listener($event);
             if ($event && $event->isPropagationStopped()) {
                 return;
             }
+            $listener($event);
         }
     }
 
@@ -82,6 +83,7 @@ class EventDispatcher
             array_push($this->events[$eventName]["$address:$port"], $listener);
         }
         $this->groupEvents["$address:$port"][$eventName] = true;
+        return true;
     }
 
     public function removeGroupListener(ConnectionInterface $connection)
@@ -96,7 +98,7 @@ class EventDispatcher
         unset($this->groupEvents["$address:$port"]);
     }
 
-    public function removeListener($eventName, ConnectionInterface $connection = null, $listener = null)
+    protected function removeListener($eventName, ConnectionInterface $connection = null, $listener = null)
     {
         if (!isset($this->events[$eventName])) {
             return;
