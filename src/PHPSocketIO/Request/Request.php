@@ -16,6 +16,7 @@ class Request extends HttpFoundation\Request
     public function setConnection(ConnectionInterface $connection)
     {
         $this->connection = $connection;
+        return true;
     }
 
     public function getConnection()

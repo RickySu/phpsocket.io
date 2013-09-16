@@ -18,6 +18,7 @@ class RequestEvent extends Event
     public function setRequest(Request $request)
     {
         $this->request = $request;
+        return true;
     }
     /**
      *

@@ -23,11 +23,13 @@ class HttpWebSocket
     public function setRequest(Request $request)
     {
         $this->request = $request;
+        return true;
     }
 
     public function setConnection(ConnectionInterface $connection)
     {
         $this->connection = $connection;
+        return true;
     }
 
     /**
