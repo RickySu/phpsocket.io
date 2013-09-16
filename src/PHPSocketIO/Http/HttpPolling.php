@@ -29,10 +29,10 @@ abstract class HttpPolling
 
     protected $defuleTimeout = 10;
 
-    public function __construct(ConnectionInterface $connection, $sessionInited)
+    public function __construct(Request $request, $sessionInited)
     {
-        $this->connection = $connection;
-        $this->request = $connection->getRequest();
+        $this->connection = $request->getConnection();
+        $this->request = $request;
         if(!$sessionInited){
             $this->init();
             return;

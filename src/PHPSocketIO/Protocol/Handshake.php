@@ -1,7 +1,6 @@
 <?php
 namespace PHPSocketIO\Protocol;
 
-use PHPSocketIO\Connection;
 use PHPSocketIO\Event;
 use PHPSocketIO\Response\Response;
 use PHPSocketIO\Request\Request;
@@ -21,18 +20,18 @@ class Handshake
         self::PROTOCOL_JSONP_POLLING,
     );
 
-    public static function initialize(Connection $connection, Request $request)
+    public static function initialize(Request $request)
     {
         list($uri, ) = explode('?', $request->getRequestUri());
         $requestDocSplit = explode('/', substr($uri, 1));
-        if($requestDocSplit[0] != $connection->getNamespace()){
+        if($requestDocSplit[0] != $request->getConnection()->getNamespace()){
             return self::PROTOCOL_HTMLFILE;
         }
 
-        return static::parseRequest($connection, $request, $requestDocSplit);
+        return static::parseRequest($request, $requestDocSplit);
     }
 
-    protected static function parseRequest(Connection $connection, Request $request, $requestDocSplit)
+    protected static function parseRequest(Request $request, $requestDocSplit)
     {
 
         if(!isset($requestDocSplit[1]) || $requestDocSplit[1]!=1){
@@ -45,13 +44,13 @@ class Handshake
         $dispatcher->dispatch('request.init.session', $requestEvent);
 
         if(!isset($requestDocSplit[2]) || $requestDocSplit[2]==''){
-            return static::generateHanshakeResponse($connection);
+            return static::generateHanshakeResponse($request);
         }
 
         if(!in_array($requestDocSplit[2], static::$validTransportID)){
             return new Response('bad protocol', 400);
         }
-        return static::upgradeProtocol($connection, $request, $requestDocSplit[2], $requestDocSplit[3]);
+        return static::upgradeProtocol($request, $requestDocSplit[2], $requestDocSplit[3]);
     }
 
     public static function processProtocol($data, Connection $connection)
@@ -78,7 +77,7 @@ class Handshake
         return new Response('1');
     }
 
-    protected static function upgradeProtocol(Connection $connection, Request $request, $transportId, $sessionId)
+    protected static function upgradeProtocol(Request $request, $transportId, $sessionId)
     {
         $session = $request->getSession();
         $session->setId($sessionId);
@@ -91,19 +90,18 @@ class Handshake
 
         switch ($transportId){
             case static::PROTOCOL_JSONP_POLLING:
-                return new Http\HttpJsonpPolling($connection, $sessionInited);
+                return new Http\HttpJsonpPolling($request, $sessionInited);
             case static::PROTOCOL_XHR_POLLING:
-                return new Http\HttpXHRPolling($connection, $sessionInited);
+                return new Http\HttpXHRPolling($request, $sessionInited);
             case static::PROTOCOL_WEBSOCKET:
-                return new Http\HttpWebSocket($connection, $sessionInited);
+                return new Http\HttpWebSocket($request, $sessionInited);
             default:
                 return new Response('bad protocol', 400);
         }
     }
 
-    protected static function generateHanshakeResponse(Connection $connection)
+    protected static function generateHanshakeResponse(Request $request)
     {
-        $request = $connection->getRequest();
         $session = $request->getSession();
         $session->start();
         $response = new Response("{$request->getSession()->getId()}:60:60:".implode(',', self::$validTransportID));

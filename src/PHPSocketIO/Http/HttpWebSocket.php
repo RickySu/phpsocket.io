@@ -2,7 +2,8 @@
 
 namespace PHPSocketIO\Http;
 
-use PHPSocketIO\Connection;
+use PHPSocketIO\ConnectionInterface;
+use PHPSocketIO\Request\Request;
 use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
 use PHPSocketIO\Event;
 use PHPSocketIO\Response\ResponseWebSocketFrame;
@@ -13,11 +14,16 @@ class HttpWebSocket
 
     protected $heartbeatTimeout = 30;
     protected $websocket;
+    /**
+     *
+     * @var ConnecyionInterface
+     */
     protected $connection;
 
-    public function __construct(Connection $connection, $sessionInited)
+    public function __construct(Request $request, $sessionInited)
     {
-        $this->connection = $connection;
+        $this->connection = $request->getConnection();
+        $this->request = $request;
         $this->websocket = new WebSocket\WebSocket();
         if (!($handshakeResponse = $this->websocket->getHandshakeReponse($connection->getRequest()))) {
             $this->connection->write(new Response('bad protocol', 400), true);
