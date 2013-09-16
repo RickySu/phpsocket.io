@@ -55,12 +55,13 @@ class Connection implements ConnectionInterface
             'CONNECT ' => \EventHttpRequest::CMD_CONNECT ,
             'PATCH ' => \EventHttpRequest::CMD_PATCH ,
         ));
-        $this->request = Http\Http::parseRequest(
+        $request = Http\Http::parseRequest(
                 $server,
                 $headers,
                 $eventHTTPRequest->getOutputBuffer()->read(static::MAX_INPUT));
-        $this->request->setConnection($this);
-        Http\Http::handleRequest($this, $this->request);
+        $request->setConnection($this);
+        $this->setRequest($request);
+        Http\Http::handleRequest($request);
     }
 
     public function setRequest(Request\Request $request)

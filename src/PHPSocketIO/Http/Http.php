@@ -9,16 +9,16 @@ use PHPSocketIO\Protocol\Handshake;
 class Http
 {
 
-    static public function handleRequest(ConnectionInterface $connection, Request $request)
+    static public function handleRequest(Request $request)
     {
-        $handshakeResult = Handshake::initialize($connection, $request);
+        $handshakeResult = Handshake::initialize($request);
 
         if($handshakeResult === Handshake::PROTOCOL_HTMLFILE){
             return;
         }
 
         if($handshakeResult instanceof Response){
-            $connection->write($handshakeResult, true);
+            $request->getConnection()->write($handshakeResult, true);
             return;
         }
     }
