@@ -39,7 +39,8 @@ class Handshake
             return new Response('bad protocol', 400);
         }
 
-        $requestEvent = new Event\RequestEvent($connection, $request);
+        $requestEvent = new Event\RequestEvent();
+        $requestEvent->setRequest($request);
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->dispatch('request.init.session', $requestEvent);
 
@@ -67,8 +68,11 @@ class Handshake
                 if(!isset($eventData['name']) && !isset($eventData['args'])){
                     return new Response('bad protocol', 402);
                 }
+                $messageEvent = new Event\MessageEvent();
+                $messageEvent->setMessage($eventData['args'][0]);
+                $messageEvent->setConnection($connection);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
-                $dispatcher->dispatch("client.{$eventData['name']}", new Event\MessageEvent($eventData['args'][0], $connection));
+                $dispatcher->dispatch("client.{$eventData['name']}", $messageEvent);
                 break;
         }
         return new Response('1');

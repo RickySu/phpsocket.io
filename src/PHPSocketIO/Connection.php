@@ -59,7 +59,13 @@ class Connection implements ConnectionInterface
                 $server,
                 $headers,
                 $eventHTTPRequest->getOutputBuffer()->read(static::MAX_INPUT));
+        $this->request->setConnection($this);
         Http\Http::handleRequest($this, $this->request);
+    }
+
+    public function setRequest(Request\Request $request)
+    {
+        $this->request = $request;
     }
 
     public function setEventHTTPRequest(\eventHTTPRequest $eventHTTPRequest)
@@ -83,7 +89,9 @@ class Connection implements ConnectionInterface
                 $data  = $this->eventBufferEvent->read(4096);
                 file_put_contents('/home/ricky/packet', $data);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
-                $messageEvent = new Event\MessageEvent($data, $this);
+                $messageEvent = new Event\MessageEvent();
+                $messageEvent->setMessage($data);
+                $messageEvent->setConnection($this);
                 $dispatcher->dispatch("socket.receive", $messageEvent, $this);
             }, function(){
                 if($this->shutdownAfterSend){
@@ -180,13 +188,15 @@ class Connection implements ConnectionInterface
 
     public function emit($eventName, $message)
     {
+        $messageEvent = new Event\MessageEvent();
+        $messageEvent->setMessage(array(
+                'event' => $eventName,
+                'message' => $message
+                ));
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->dispatch(
             "server.emit",
-            new Event\MessageEvent(array(
-                'event' => $eventName,
-                'message' => $message,
-            ), $this),
+            $messageEvent,
             $this
         );
     }

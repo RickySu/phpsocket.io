@@ -3,10 +3,10 @@
 namespace PHPSocketIO\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use PHPSocketIO\Connection;
+use PHPSocketIO\ConnectionInterface;
 
 /**
- * Description of RequestEvent
+ * Description of MessageEvent
  *
  * @author ricky
  */
@@ -16,18 +16,12 @@ class MessageEvent extends Event
     protected $message;
     protected $connection;
 
-    public function __construct($message = null, Connection $connection = null)
-    {
-        $this->setMessage($message);
-        $this->setConnection($connection);
-    }
-
-    public function setMessage($message = null)
+    public function setMessage($message)
     {
         $this->message = $message;
     }
 
-    public function setConnection(Connection $connection = null)
+    public function setConnection(ConnectionInterface $connection)
     {
         $this->connection = $connection;
     }

@@ -1,10 +1,10 @@
 <?php
 namespace PHPSocketIO\Event;
 use Symfony\Component\EventDispatcher\Event;
-use PHPSocketIO\Connection;
+use PHPSocketIO\ConnectionInterface;
 
 /**
- * Description of RequestEvent
+ * Description of ReceiveEvent
  *
  * @author ricky
  */
@@ -13,16 +13,12 @@ class ReceiveEvent extends Event{
     protected $connection;
     protected $message;
 
-    public function __construct(Connection $connection, $message)
+    public function __construct(ConnectionInterface $connection, $message)
     {
         $this->connection = $connection;
         $this->message = $message;
     }
-
-    public function __destruct() {
-        $this->connection = null;
-    }
-
+    
     /**
      *
      * @return mixed
@@ -34,7 +30,7 @@ class ReceiveEvent extends Event{
 
     /**
      *
-     * @return Connection
+     * @return ConnectionInterface
      */
     public function getConnection()
     {

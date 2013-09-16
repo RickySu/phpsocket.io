@@ -67,14 +67,13 @@ class SocketIO
 
     public function emit($eventName, $message)
     {
-        $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->dispatch(
-            "server.emit",
-            new Event\MessageEvent(array(
+        $messageEvent = new Event\MessageEvent();
+        $messageEvent->setMessage(array(
                 'event' => $eventName,
                 'message' => $message,
-            ))
-        );
+            ));
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->dispatch("server.emit", $messageEvent);
     }
 
     public function onConnect($callback)
