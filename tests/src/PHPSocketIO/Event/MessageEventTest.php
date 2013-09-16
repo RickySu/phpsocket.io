@@ -3,7 +3,7 @@ namespace PHPSocketIO\Event;
 use PHPSocketIO\Request\Request;
 use PHPSocketIO\ConnectionInterface;
 
-class MockConnection implements ConnectionInterface
+class MessageEventMockConnection implements ConnectionInterface
 {
     public function clearTimeout()
     {
@@ -47,7 +47,7 @@ class MessageEventTest extends \PHPUnit_Framework_TestCase
     public function test_setConnection()
     {
         $messageEvent = new MessageEvent();
-        $this->assertTrue($messageEvent->setConnection(new MockConnection()));
+        $this->assertTrue($messageEvent->setConnection(new MessageEventMockConnection()));
     }
 
     public function test_getMessage()
@@ -59,7 +59,7 @@ class MessageEventTest extends \PHPUnit_Framework_TestCase
 
     public function test_getConnection()
     {
-        $connection = new MockConnection();
+        $connection = new MessageEventMockConnection();
         $messageEvent = new MessageEvent();
         $messageEvent->setConnection($connection);
         $this->assertEquals($connection, $messageEvent->getConnection());
