@@ -5,6 +5,7 @@ use PHPSocketIO\Event;
 use PHPSocketIO\Response\Response;
 use PHPSocketIO\Request\Request;
 use PHPSocketIO\Http;
+use PHPSocketIO\ConnectionInterface;
 
 class Handshake
 {
@@ -53,7 +54,7 @@ class Handshake
         return static::upgradeProtocol($request, $requestDocSplit[2], $requestDocSplit[3]);
     }
 
-    public static function processProtocol($data, Connection $connection)
+    public static function processProtocol($data, ConnectionInterface $connection)
     {
         if(!preg_match('/^(.*?):(.*?):(.*?):(.*?)$/i', $data, $match)){
             return new Response('bad protocol', 404);

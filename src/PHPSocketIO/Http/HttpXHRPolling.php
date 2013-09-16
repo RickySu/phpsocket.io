@@ -1,12 +1,14 @@
 <?php
 namespace PHPSocketIO\Http;
 
+use PHPSocketIO\Response\ResponseInterface;
+
 class HttpXHRPolling extends HttpPolling
 {
 
     protected function parseClientEmitData()
     {
-        return $this->request->getContent();
+        return $this->getRequest()->getContent();
     }
 
     protected function generateResponseData($content)
@@ -14,7 +16,7 @@ class HttpXHRPolling extends HttpPolling
         return $content;
     }
 
-    protected function setResponseHeaders($response)
+    protected function setResponseHeaders(ResponseInterface $response)
     {
         $response->headers->set('Content-Type', 'text/plain');
         $response->headers->set('Access-Control-Allow-Origin', $this->request->headers->get('Origin'));

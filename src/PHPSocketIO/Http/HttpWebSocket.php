@@ -20,16 +20,44 @@ class HttpWebSocket
      */
     protected $connection;
 
+    public function setRequest(Request $request)
+    {
+        $this->request = $request;
+    }
+
+    public function setConnection(ConnectionInterface $connection)
+    {
+        $this->connection = $connection;
+    }
+
+    /**
+     *
+     * @return Request
+     */
+    public function getRequest()
+    {
+        return $this->request;
+    }
+
+    /**
+     *
+     * @return ConnectionInterface
+     */
+    public function getConnection()
+    {
+        return $this->connection;
+    }
+
     public function __construct(Request $request, $sessionInited)
     {
-        $this->connection = $request->getConnection();
-        $this->request = $request;
+        $this->setRequest($request);
+        $this->setConnection($request->getConnection());
         $this->websocket = new WebSocket\WebSocket();
-        if (!($handshakeResponse = $this->websocket->getHandshakeReponse($connection->getRequest()))) {
-            $this->connection->write(new Response('bad protocol', 400), true);
+        if (!($handshakeResponse = $this->websocket->getHandshakeReponse($request))) {
+            $this->getConnection()->write(new Response('bad protocol', 400), true);
             return;
         }
-        $this->connection->write($handshakeResponse);
+        $this->getConnection()->write($handshakeResponse);
         $this->sendData(ProtocolBuilder::Connect());
         $this->initEvent();
         $this->setHeartbeatTimeout();
@@ -37,8 +65,9 @@ class HttpWebSocket
 
     protected function setHeartbeatTimeout()
     {
-        $this->connection->clearTimeout();
-        $this->connection->setTimeout($this->heartbeatTimeout, function(){
+        $connection = $this->getConnection();
+        $connection->clearTimeout();
+        $connection->setTimeout($this->heartbeatTimeout, function(){
             $this->sendData(ProtocolBuilder::Heartbeat());
         });
     }
@@ -48,12 +77,13 @@ class HttpWebSocket
         if(!($data instanceof WebSocket\Frame)){
             $data = WebSocket\Frame::generate($data);
         }
-        $this->connection->write(new ResponseWebSocketFrame($data), $data->isClosed());
+        $this->getConnection()->write(new ResponseWebSocketFrame($data), $data->isClosed());
         $this->setHeartbeatTimeout();
     }
 
     protected function initEvent()
     {
+        $connection = $this->getConnection();
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("socket.receive", function(Event\MessageEvent $messageEvent) {
                     $message = $messageEvent->getMessage();
@@ -61,8 +91,8 @@ class HttpWebSocket
                     if(!($frame instanceof WebSocket\Frame)){
                         return;
                     }
-                    Handshake::processProtocol($frame->getData(), $this->connection);
-                }, $this->connection);
+                    Handshake::processProtocol($frame->getData(), $this->getConnection());
+                }, $connection);
 
         $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent) {
                     $message = $messageEvent->getMessage();
@@ -70,7 +100,7 @@ class HttpWebSocket
                                 'name' => $message['event'],
                                 'args' => array($message['message']),
                     )));
-                }, $this->connection);
+                }, $connection);
     }
 
 }

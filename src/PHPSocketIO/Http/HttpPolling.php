@@ -5,6 +5,7 @@ namespace PHPSocketIO\Http;
 use PHPSocketIO\ConnectionInterface;
 use PHPSocketIO\Event;
 use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
+use PHPSocketIO\Response\ResponseInterface;
 use PHPSocketIO\Response\Response;
 use PHPSocketIO\Response\ResponseChunk;
 use PHPSocketIO\Response\ResponseChunkStart;
@@ -29,29 +30,59 @@ abstract class HttpPolling
 
     protected $defuleTimeout = 10;
 
+
+
+    public function setRequest(Request $request)
+    {
+        $this->request = $request;
+    }
+
+    public function setConnection(ConnectionInterface $connection)
+    {
+        $this->connection = $connection;
+    }
+
+    /**
+     *
+     * @return Request
+     */
+    public function getRequest()
+    {
+        return $this->request;
+    }
+
+    /**
+     *
+     * @return ConnectionInterface
+     */
+    public function getConnection()
+    {
+        return $this->connection;
+    }
+
     public function __construct(Request $request, $sessionInited)
     {
-        $this->connection = $request->getConnection();
-        $this->request = $request;
+        $this->setRequest($request);
+        $this->setConnection($request->getConnection());
         if(!$sessionInited){
             $this->init();
             return;
         }
-        if($this->request->isMethod('POST')){
+        if($request->isMethod('POST')){
             $this->processPOSTMethod();
             return;
         }
         $this->enterPollingMode();
         $this->initEvent();
-        $this->connection->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
+        $this->getConnection()->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
         return;
     }
 
     protected function processPOSTMethod()
     {
-        Handshake::processProtocol($this->parseClientEmitData(), $this->connection->getRequest());
+        Handshake::processProtocol($this->parseClientEmitData(), $this->getRequest());
         $response = $this->setResponseHeaders(new Response('1'));
-        $this->connection->write($response);
+        $this->getConnection()->write($response);
     }
 
     abstract protected function parseClientEmitData();
@@ -73,18 +104,18 @@ abstract class HttpPolling
         $response = $this->setResponseHeaders(
             new Response($this->generateResponseData(ProtocolBuilder::Connect()))
         );
-        $this->connection->write($response, true);
+        $this->getConnection()->write($response, true);
     }
 
     protected function enterPollingMode()
     {
         $response = $this->setResponseHeaders(new ResponseChunkStart());
-        $this->connection->write($response);
+        $this->getConnection()->write($response);
     }
 
     abstract protected function generateResponseData($content);
 
-    abstract protected function setResponseHeaders($response);
+    abstract protected function setResponseHeaders(ResponseInterface $response);
 
     protected function onTimeout()
     {
@@ -94,9 +125,9 @@ abstract class HttpPolling
     protected function writeChunkEnd($content)
     {
         $content = $this->generateResponseData($content);
-        $this->connection->clearTimeout();
-        $this->connection->write(new ResponseChunk($content));
-        $this->connection->write(new ResponseChunkEnd(), true);
+        $this->getConnection()->clearTimeout();
+        $this->getConnection()->write(new ResponseChunk($content));
+        $this->getConnection()->write(new ResponseChunkEnd(), true);
     }
 
 }
