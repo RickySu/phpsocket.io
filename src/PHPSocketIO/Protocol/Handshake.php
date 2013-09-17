@@ -56,11 +56,16 @@ class Handshake
 
     public static function processProtocol($data, ConnectionInterface $connection)
     {
-        if(!preg_match('/^(.*?):(.*?):(.*?):(.*?)$/i', $data, $match)){
+        if(!preg_match('/^(.*?):(.*?):(.*)/i', $data, $match)){
             return new Response('bad protocol', 404);
         }
-        list($raw, $type, $id, $endpoint, $jsonData) = $match;
+        list($raw, $type, $id, $postRawData) = $match;
+        list($endpoint, ) = explode(':', $postRawData);
+        $jsonData = substr($postRawData, strlen($endpoint) + 1);
         switch($type){
+            case 1:    //Connect
+                $connection->getRequest()->getSession()->set('endpoint', $endpoint);
+                break;
             case 2:    //Heartbeat
                 break;
             case 5:    //Event
@@ -69,10 +74,11 @@ class Handshake
                     return new Response('bad protocol', 402);
                 }
                 $messageEvent = new Event\MessageEvent();
+                $messageEvent->setEndpoint($endpoint);
                 $messageEvent->setMessage($eventData['args'][0]);
                 $messageEvent->setConnection($connection);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
-                $dispatcher->dispatch("client.{$eventData['name']}", $messageEvent);
+                $dispatcher->dispatch("client.{$eventData['name']}.$endpoint", $messageEvent);
                 break;
         }
         return new Response('1');

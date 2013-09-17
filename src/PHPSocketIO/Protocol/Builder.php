@@ -4,9 +4,9 @@ namespace PHPSocketIO\Protocol;
 
 class Builder
 {
-    public static function Event($data)
+    public static function Event($data, $endpoint = null)
     {
-        return "5:::".json_encode($data);
+        return "5::$endpoint:".json_encode($data);
     }
 
     public static function Connect()

@@ -15,6 +15,17 @@ class MessageEvent extends Event
 
     protected $message;
     protected $connection;
+    protected $endpoint;
+
+    public function getEndpoint()
+    {
+        return $this->endpoint;
+    }
+
+    public function setEndpoint($endpoint)
+    {
+        return $this->endpoint = $endpoint;
+    }
 
     public function setMessage($message)
     {

@@ -101,7 +101,7 @@ class HttpWebSocket
                     $this->sendData(ProtocolBuilder::Event(array(
                                 'name' => $message['event'],
                                 'args' => array($message['message']),
-                    )));
+                    ), $messageEvent->getEndpoint()));
                 }, $connection);
     }
 

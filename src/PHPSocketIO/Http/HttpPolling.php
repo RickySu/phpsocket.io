@@ -82,7 +82,7 @@ abstract class HttpPolling
 
     protected function processPOSTMethod()
     {
-        Handshake::processProtocol($this->parseClientEmitData(), $this->getRequest());
+        Handshake::processProtocol($this->parseClientEmitData(), $this->getConnection());
         $response = $this->setResponseHeaders(new Response('1'));
         $this->getConnection()->write($response);
     }
@@ -97,7 +97,7 @@ abstract class HttpPolling
             $this->writeChunkEnd(ProtocolBuilder::Event(array(
                 'name' => $message['event'],
                 'args' => array($message['message']),
-            )));
+            ), $messageEvent->getEndpoint()));
         }, $this->connection);
     }
 

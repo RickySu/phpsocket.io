@@ -58,7 +58,7 @@ class Connection implements ConnectionInterface
         $request = Http\Http::parseRequest(
                 $server,
                 $headers,
-                $eventHTTPRequest->getOutputBuffer()->read(static::MAX_INPUT));
+                $eventHTTPRequest->getInputBuffer()->read(static::MAX_INPUT));
         $request->setConnection($this);
         $this->setRequest($request);
         Http\Http::handleRequest($request);
@@ -67,6 +67,14 @@ class Connection implements ConnectionInterface
     public function setRequest(Request\Request $request)
     {
         $this->request = $request;
+    }
+
+    public function getSessionId()
+    {
+        if($this->getRequest() && $this->getRequest()->getSession()){
+            return $this->getRequest()->getSession()->getId();
+        }
+        return null;
     }
 
     public function setEventHTTPRequest(\eventHTTPRequest $eventHTTPRequest)
@@ -180,26 +188,33 @@ class Connection implements ConnectionInterface
         $this->free();
     }
 
-    public function on($eventName, $callback)
+    public function on($eventName, $callback, $endpoint = null)
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener("client.$eventName", $callback, $this);
+        $dispatcher->addListener("client.$eventName.$endpoint", function(Event\MessageEvent $event) use($callback){
+            if($event->getEndpoint()!=='' && $event->getEndpoint() != $this->getRequest()->getSession()->get('endpoint')){
+                return;
+            }
+            $callback($event);
+        }, $this);
         return $this;
     }
 
-    public function emit($eventName, $message)
+    public function emit($eventName, $message, $endpoint = null)
     {
         $messageEvent = new Event\MessageEvent();
         $messageEvent->setMessage(array(
                 'event' => $eventName,
                 'message' => $message
                 ));
+        $messageEvent->setEndpoint($endpoint);
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->dispatch(
             "server.emit",
             $messageEvent,
             $this
         );
+        return $this;
     }
 
     public function onRecieve($callback)

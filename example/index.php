@@ -9,13 +9,18 @@ use PHPSocketIO\Response\Response;
 use PHPSocketIO\Event;
 
 $socketio = new SocketIO();
+$chat = $socketio
+        ->getSockets()
+        ->on('addme', function(Event\MessageEvent $messageEvent) use(&$chat){
+            $messageEvent->getConnection()->emit('update', array('msg' => "歡迎登入 {$messageEvent->getMessage()}"));
+            $chat->emit("update", array('msg' => "{$messageEvent->getMessage()} 進入聊天室了"));
+        })
+        ->on('msg', function(Event\MessageEvent $messageEvent) use(&$chat){
+            $message = $messageEvent->getMessage();
+            $chat->emit('update', $message);
+        });
 $socketio
         ->listen(8080)
-        ->on('msg', function(Event\MessageEvent $messageEvent) use($socketio){
-            $message = $messageEvent->getMessage();
-            $connection = $messageEvent->getConnection();
-            $socketio->emit('update', $message);
-        })
         ->onConnect(function(Connection $connection) use($socketio){
             echo "connected {$connection->getRemote()[0]}:{$connection->getRemote()[1]}\n";
         })

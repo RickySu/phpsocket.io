@@ -20,6 +20,8 @@ class SocketIO
 
     protected $sessionArray;
 
+    protected $sockets = null;
+
     public function __construct(\EventBase $baseEvent = null)
     {
         if ($baseEvent === null) {
@@ -63,17 +65,6 @@ class SocketIO
             $this->baseEvent->dispatch();
             $this->eventBufferEventGc();
         }
-    }
-
-    public function emit($eventName, $message)
-    {
-        $messageEvent = new Event\MessageEvent();
-        $messageEvent->setMessage(array(
-                'event' => $eventName,
-                'message' => $message,
-            ));
-        $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->dispatch("server.emit", $messageEvent);
     }
 
     public function onConnect($callback)
@@ -136,11 +127,41 @@ class SocketIO
         $this->onConnectCallback = null;
     }
 
-    public function on($eventName, $callback)
+    /**
+     *
+     * @param string $endpoint
+     * @return SocketIOSocket
+     */
+    public function of($endpoint)
+    {
+        return new SocketIOSocket($endpoint);
+    }
+
+    public function getSockets()
+    {
+        if(!$this->sockets){
+            $this->sockets = $this->of('');
+        }
+        return $this->sockets;
+    }
+
+    public function on($eventName, $callback, $endpoint = null)
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener("client.$eventName", $callback);
+        $dispatcher->addListener("client.$eventName.$endpoint", $callback);
         return $this;
+    }
+
+    public function emit($eventName, $message, $endpoint = null)
+    {
+        $messageEvent = new Event\MessageEvent();
+        $messageEvent->setMessage(array(
+                'event' => $eventName,
+                'message' => $message,
+            ));
+        $messageEvent->setEndpoint($endpoint);
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->dispatch("server.emit", $messageEvent);
     }
 
 }
