@@ -13,7 +13,7 @@ class SocketIOSocket
     public function on($eventName, $callback)
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener("client.$eventName.{$this->endpoint}", $callback);
+        $dispatcher->addListener("client.$eventName", $callback, $this->endpoint);
         return $this;
     }
 
@@ -26,7 +26,7 @@ class SocketIOSocket
             ));
         $messageEvent->setEndpoint($this->endpoint);
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->dispatch("server.emit", $messageEvent);
+        $dispatcher->dispatch("server.emit", $messageEvent, $this->endpoint);
         return $this;
     }
 

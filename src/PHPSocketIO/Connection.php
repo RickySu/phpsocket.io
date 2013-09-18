@@ -23,6 +23,8 @@ class Connection implements ConnectionInterface
 
     protected $remote;
 
+    protected $registeredEventGroups = [];
+
     /**
      *
      * @var Adapter\ProtocolProcessorInterface
@@ -62,6 +64,35 @@ class Connection implements ConnectionInterface
         $request->setConnection($this);
         $this->setRequest($request);
         Http\Http::handleRequest($request);
+        $this->prepareEventGroup();
+        $this->emitPendingEvent();
+    }
+
+    protected function emitPendingEvent()
+    {
+        $pendingEvent = $this->getRequest()->getSession()->get('pendingEvent', []);
+        foreach($pendingEvent as $eventName => &$events){
+            foreach($events as $index => $event){
+                if(time() - $event['timestamp'] < 5){
+                    $receive = $this->dispatchEvent($eventName, $event['message']);
+                    if($receive){
+                        unset($events[$index]);
+                    }
+                }
+                else{
+                    unset($events[$index]);
+                }
+            }
+            if(count($pendingEvent[$eventName]) == 0){
+                unset($pendingEvent[$eventName]);
+            }
+        }
+        $this->getRequest()->getSession()->set('pendingEvent', $pendingEvent);
+    }
+
+    protected function prepareEventGroup()
+    {
+        $this->registeredEventGroups[$this->getSessionId()] = true;
     }
 
     public function setRequest(Request\Request $request)
@@ -187,33 +218,41 @@ class Connection implements ConnectionInterface
         $this->free();
     }
 
-    public function on($eventName, $callback, $endpoint = null)
+    public function on($eventName, $callback)
     {
+        $group[] = $this->getSessionId();
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener("client.$eventName.$endpoint", function(Event\MessageEvent $event) use($callback){
-            if($event->getEndpoint()!=='' && $event->getEndpoint() != $this->getRequest()->getSession()->get('endpoint')){
-                return;
-            }
-            $callback($event);
-        }, $this->getSessionId());
+        $dispatcher->addListener("client.$eventName", $callback, $group);
         return $this;
     }
 
-    public function emit($eventName, $message, $endpoint = null)
+    public function emit($eventName, $message)
+    {
+        if(!$this->dispatchEvent($eventName, $message)){
+            $pendingEvent = $this->getRequest()->getSession()->get('pendingEvent', []);
+            $pendingEvent[$eventName][] = array(
+                'timestamp' => time(),
+                'message' => $message,
+            );
+            $this->getRequest()->getSession()->set('pendingEvent', $pendingEvent);
+        }
+        return $this;
+    }
+
+    protected function dispatchEvent($eventName, $message)
     {
         $messageEvent = new Event\MessageEvent();
         $messageEvent->setMessage(array(
                 'event' => $eventName,
                 'message' => $message
                 ));
-        $messageEvent->setEndpoint($endpoint);
+        $messageEvent->setConnection($this);
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->dispatch(
+        return $dispatcher->dispatch(
             "server.emit",
             $messageEvent,
             $this->getSessionId()
         );
-        return $this;
     }
 
     public function onRecieve($callback)
@@ -231,7 +270,11 @@ class Connection implements ConnectionInterface
     protected function unregisterEvent()
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->removeGroupListener($this->getSessionId());
+        $groups = array_keys($this->registeredEventGroups);
+        foreach($groups as $group){
+            $dispatcher->removeGroupListener($group);
+        }
+        $this->registeredEventGroups = [];
     }
 
 }

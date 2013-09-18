@@ -103,6 +103,7 @@ class SocketIO
                 $this->requests[]=$request;
                 $this->baseEvent->stop();
             });
+            $request->getEventHttpConnection()->getPeer($address, $port);
             $connection->parseHTTP($request);
             call_user_func($this->onConnectCallback, $connection);
         });
@@ -145,21 +146,20 @@ class SocketIO
         return $this->sockets;
     }
 
-    public function on($eventName, $callback, $endpoint = null)
+    public function on($eventName, $callback)
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener("client.$eventName.$endpoint", $callback);
+        $dispatcher->addListener("client.$eventName", $callback);
         return $this;
     }
 
-    public function emit($eventName, $message, $endpoint = null)
+    public function emit($eventName, $message)
     {
         $messageEvent = new Event\MessageEvent();
         $messageEvent->setMessage(array(
                 'event' => $eventName,
                 'message' => $message,
             ));
-        $messageEvent->setEndpoint($endpoint);
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->dispatch("server.emit", $messageEvent);
     }

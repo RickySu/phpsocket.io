@@ -93,12 +93,16 @@ abstract class HttpPolling
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent){
+            $endpoint = $this->getRequest()->getSession()->get('endpoint', $messageEvent->getEndpoint());
             $message = $messageEvent->getMessage();
             $this->writeChunkEnd(ProtocolBuilder::Event(array(
                 'name' => $message['event'],
                 'args' => array($message['message']),
-            ), $messageEvent->getEndpoint()));
-        }, $this->connection->getSessionId());
+            ), $endpoint));
+        },array(
+            $this->connection->getSessionId(),
+            $this->getRequest()->getSession()->get('endpoint'),
+        ));
     }
 
     protected function init()

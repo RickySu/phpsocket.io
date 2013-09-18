@@ -15,7 +15,7 @@ class Handshake
     const PROTOCOL_JSONP_POLLING = 'jsonp-polling';
 
     protected static $validTransportID = array(
-        self::PROTOCOL_WEBSOCKET,
+        //self::PROTOCOL_WEBSOCKET,
         self::PROTOCOL_XHR_POLLING,
         self::PROTOCOL_HTMLFILE,
         self::PROTOCOL_JSONP_POLLING,
@@ -65,6 +65,8 @@ class Handshake
         switch($type){
             case 1:    //Connect
                 $connection->getRequest()->getSession()->set('endpoint', $endpoint);
+                $dispatcher = Event\EventDispatcher::getDispatcher();
+                $dispatcher->dispatch("connect");
                 break;
             case 2:    //Heartbeat
                 break;
@@ -78,7 +80,7 @@ class Handshake
                 $messageEvent->setMessage($eventData['args'][0]);
                 $messageEvent->setConnection($connection);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
-                $dispatcher->dispatch("client.{$eventData['name']}.$endpoint", $messageEvent);
+                $dispatcher->dispatch("client.{$eventData['name']}", $messageEvent, $endpoint);
                 break;
         }
         return new Response('1');

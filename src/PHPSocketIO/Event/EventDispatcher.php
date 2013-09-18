@@ -26,20 +26,31 @@ class EventDispatcher
     protected function brocast(Event $event)
     {
         $eventName = $event->getName();
+        $listeners = [];
         foreach ($this->events[$eventName] as &$eventGroup) {
-            foreach ($eventGroup as &$listener) {
-                if ($event && $event->isPropagationStopped()) {
-                    return;
-                }
-                $listener($event);
+            foreach ($eventGroup as $listenerArray) {
+                list($listener, $priority) = $listenerArray;
+                $listeners[$priority][] = $listener;
             }
         }
+        krsort($listeners);
+        $processCount = 0;
+        foreach($listeners as $listener){
+            foreach($listener as $callback){
+                if ($event && $event->isPropagationStopped()) {
+                    return $processCount;
+                }
+                $callback($event);
+                $processCount++;
+            }
+        }
+        return $processCount;
     }
 
-    public function dispatch($eventName, Event $event = null, $uniqueId = null)
+    public function dispatch($eventName, Event $event = null, $group = null)
     {
         if (!isset($this->events[$eventName])) {
-            return;
+            return 0;
         }
 
         if (!$event) {
@@ -48,61 +59,79 @@ class EventDispatcher
 
         $event->setName($eventName);
 
-        if ($uniqueId === null) {
-            $this->brocast($event);
-            return;
+        if ($group === null) {
+            return $this->brocast($event);
         }
 
-        if (!isset($this->events[$eventName][$uniqueId])) {
-            return;
+        if (!isset($this->groupEvents[$group][$eventName])) {
+            return 0;
         }
-        foreach ($this->events[$eventName][$uniqueId] as &$listener) {
-            if ($event && $event->isPropagationStopped()) {
-                return;
+
+        $listeners=[];
+        foreach ($this->groupEvents[$group][$eventName] as $uniqueKey) {
+            if(isset($this->events[$eventName]) && isset($this->events[$eventName][$uniqueKey])){
+                foreach($this->events[$eventName][$uniqueKey] as $listenerArray){
+                    list($listener, $priority) = $listenerArray;
+                    $listeners[$priority][] = $listener;
+                }
             }
-            $listener($event);
         }
+        krsort($listeners);
+        $processCount = 0;
+        foreach($listeners as $listener){
+            foreach($listener as $callback){
+                if ($event && $event->isPropagationStopped()) {
+                    return $processCount;
+                }
+                $callback($event);
+                $processCount++;
+            }
+        }
+        return $processCount;
     }
 
-    public function addListener($eventName, $listener, $uniqueId = null, $highPriority = false)
+    public function addListener($eventName, $listener, $groups = null, $priority = 0)
     {
-        if (!isset($this->events[$eventName][$uniqueId])) {
-            $this->events[$eventName][$uniqueId] = array();
+        $uniqueKey = sha1(microtime().rand().rand(), true);
+        if(!is_array($groups)){
+            $groups = [$groups];
+        }
+        $groups = array_unique($groups);
+        foreach($groups as $group){
+            if (!isset($this->events[$eventName][$group])) {
+                $this->events[$eventName][$group] = array();
+            }
+            $this->groupEvents[$group][$eventName][] = $uniqueKey;
         }
 
-        if ($highPriority) {
-            array_unshift($this->events[$eventName][$uniqueId], $listener);
-        } else {
-            array_push($this->events[$eventName][$uniqueId], $listener);
-        }
-        $this->groupEvents[$uniqueId][$eventName] = true;
+        $this->events[$eventName][$uniqueKey][] = array($listener, $priority);
+
         return true;
     }
 
-    public function removeGroupListener($uniqueId)
+    public function removeGroupListener($group)
     {
-        if (!isset($this->groupEvents[$uniqueId])) {
+        if (!isset($this->groupEvents[$group])) {
             return;
         }
-        foreach ($this->groupEvents[$uniqueId] as $eventName => $tmp) {
-            $this->removeListener($eventName, $uniqueId);
+        foreach ($this->groupEvents[$group] as $eventName => $tmp) {
+            $this->removeListener($eventName, $group);
         }
-        unset($this->groupEvents[$uniqueId]);
+        unset($this->groupEvents[$group]);
     }
 
-    protected function removeListener($eventName, $uniqueId = null, $listener = null)
+    public function removeListener($eventName, $group)
     {
         if (!isset($this->events[$eventName])) {
             return;
         }
-
-        if ($listener !== null) {
-            if (false !== ($key = array_search($listener, $this->events[$eventName][$uniqueId], true))) {
-                unset($this->events[$eventName][$uniqueId][$key]);
-            }
-            return;
+        foreach($this->groupEvents[$group][$eventName] as $uniqueKey){
+            unset($this->events[$eventName][$uniqueKey]);
         }
-        unset($this->events[$eventName][$uniqueId]);
+        unset($this->groupEvents[$group][$eventName]);
+        if(count($this->groupEvents[$group]) == 0){
+            unset($this->groupEvents[$group]);
+        }
     }
 
 }

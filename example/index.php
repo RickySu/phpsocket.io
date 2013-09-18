@@ -10,14 +10,15 @@ use PHPSocketIO\Event;
 
 $socketio = new SocketIO();
 $chat = $socketio
-        ->getSockets()
+        ->of('/chat')
         ->on('addme', function(Event\MessageEvent $messageEvent) use(&$chat){
             $messageEvent->getConnection()->emit('update', array('msg' => "歡迎登入 {$messageEvent->getMessage()}"));
             $chat->emit("update", array('msg' => "{$messageEvent->getMessage()} 進入聊天室了"));
         })
-        ->on('msg', function(Event\MessageEvent $messageEvent) use(&$chat){
+        ->on('msg', function(Event\MessageEvent $messageEvent) use(&$chat, $socketio){
             $message = $messageEvent->getMessage();
             $chat->emit('update', $message);
+            $socketio->emit('update', $message);
         });
 $socketio
         ->listen(8080)
