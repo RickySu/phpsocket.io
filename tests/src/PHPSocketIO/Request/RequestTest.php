@@ -28,6 +28,10 @@ class MockConnection implements ConnectionInterface
     {
 
     }
+    public function getSessionId()
+    {
+        return '';
+    }
 }
 
 /**

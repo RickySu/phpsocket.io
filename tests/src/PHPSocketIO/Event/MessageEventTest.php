@@ -29,6 +29,10 @@ class MessageEventMockConnection implements ConnectionInterface
     {
 
     }
+    public function getSessionId()
+    {
+        return '';
+    }
 }
 
 /**
