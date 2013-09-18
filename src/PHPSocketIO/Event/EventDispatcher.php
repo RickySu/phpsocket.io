@@ -3,7 +3,6 @@
 namespace PHPSocketIO\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use PHPSocketIO\ConnectionInterface;
 
 class EventDispatcher
 {
@@ -37,7 +36,7 @@ class EventDispatcher
         }
     }
 
-    public function dispatch($eventName, Event $event = null, ConnectionInterface $connection = null)
+    public function dispatch($eventName, Event $event = null, $uniqueId = null)
     {
         if (!isset($this->events[$eventName])) {
             return;
@@ -49,16 +48,15 @@ class EventDispatcher
 
         $event->setName($eventName);
 
-        if ($connection === null) {
+        if ($uniqueId === null) {
             $this->brocast($event);
             return;
         }
 
-        list($address, $port) = $connection->getRemote();
-        if (!isset($this->events[$eventName]["$address:$port"])) {
+        if (!isset($this->events[$eventName][$uniqueId])) {
             return;
         }
-        foreach ($this->events[$eventName]["$address:$port"] as &$listener) {
+        foreach ($this->events[$eventName][$uniqueId] as &$listener) {
             if ($event && $event->isPropagationStopped()) {
                 return;
             }
@@ -66,57 +64,45 @@ class EventDispatcher
         }
     }
 
-    public function addListener($eventName, $listener, ConnectionInterface $connection = null, $highPriority = false)
+    public function addListener($eventName, $listener, $uniqueId = null, $highPriority = false)
     {
-        if ($connection) {
-            list($address, $port) = $connection->getRemote();
-        } else {
-            $address = $port = '';
-        }
-        if (!isset($this->events[$eventName]["$address:$port"])) {
-            $this->events[$eventName]["$address:$port"] = array();
+        if (!isset($this->events[$eventName][$uniqueId])) {
+            $this->events[$eventName][$uniqueId] = array();
         }
 
         if ($highPriority) {
-            array_unshift($this->events[$eventName]["$address:$port"], $listener);
+            array_unshift($this->events[$eventName][$uniqueId], $listener);
         } else {
-            array_push($this->events[$eventName]["$address:$port"], $listener);
+            array_push($this->events[$eventName][$uniqueId], $listener);
         }
-        $this->groupEvents["$address:$port"][$eventName] = true;
+        $this->groupEvents[$uniqueId][$eventName] = true;
         return true;
     }
 
-    public function removeGroupListener(ConnectionInterface $connection)
+    public function removeGroupListener($uniqueId)
     {
-        list($address, $port) = $connection->getRemote();
-        if (!isset($this->groupEvents["$address:$port"])) {
+        if (!isset($this->groupEvents[$uniqueId])) {
             return;
         }
-        foreach ($this->groupEvents["$address:$port"] as $eventName => $tmp) {
-            $this->removeListener($eventName, $connection);
+        foreach ($this->groupEvents[$uniqueId] as $eventName => $tmp) {
+            $this->removeListener($eventName, $uniqueId);
         }
-        unset($this->groupEvents["$address:$port"]);
+        unset($this->groupEvents[$uniqueId]);
     }
 
-    protected function removeListener($eventName, ConnectionInterface $connection = null, $listener = null)
+    protected function removeListener($eventName, $uniqueId = null, $listener = null)
     {
         if (!isset($this->events[$eventName])) {
             return;
         }
 
-        if ($connection) {
-            list($address, $port) = $connection->getRemote();
-        } else {
-            $address = $port = '';
-        }
-
         if ($listener !== null) {
-            if (false !== ($key = array_search($listener, $this->events[$eventName]["$address:$port"], true))) {
-                unset($this->events[$eventName]["$address:$port"][$key]);
+            if (false !== ($key = array_search($listener, $this->events[$eventName][$uniqueId], true))) {
+                unset($this->events[$eventName][$uniqueId][$key]);
             }
             return;
         }
-        unset($this->events[$eventName]["$address:$port"]);
+        unset($this->events[$eventName][$uniqueId]);
     }
 
 }

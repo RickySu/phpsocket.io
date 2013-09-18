@@ -98,7 +98,7 @@ abstract class HttpPolling
                 'name' => $message['event'],
                 'args' => array($message['message']),
             ), $messageEvent->getEndpoint()));
-        }, $this->connection);
+        }, $this->connection->getSessionId());
     }
 
     protected function init()

@@ -96,12 +96,11 @@ class Connection implements ConnectionInterface
             $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
                 $data  = $this->eventBufferEvent->read(4096);
-                file_put_contents('/home/ricky/packet', $data);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
                 $messageEvent = new Event\MessageEvent();
                 $messageEvent->setMessage($data);
                 $messageEvent->setConnection($this);
-                $dispatcher->dispatch("socket.receive", $messageEvent, $this);
+                $dispatcher->dispatch("socket.receive", $messageEvent, $this->getSessionId());
             }, function(){
                 if($this->shutdownAfterSend){
                     $this->free();
@@ -147,6 +146,7 @@ class Connection implements ConnectionInterface
             return;
         }
         $this->clearTimeout();
+        $this->unregisterEvent();
         if($this->request && $this->request->getSession()){
            $this->request->getSession()->save();
         }
@@ -161,7 +161,6 @@ class Connection implements ConnectionInterface
         $this->onWriteBufferEmptyCallbacks = null;
         $this->eventBufferEventGCCallback = null;
         $this->onReceiveCallbacks = null;
-        $this->unregisterEvent();
     }
 
     public function setTimeout($timer, $callback)
@@ -196,7 +195,7 @@ class Connection implements ConnectionInterface
                 return;
             }
             $callback($event);
-        }, $this);
+        }, $this->getSessionId());
         return $this;
     }
 
@@ -212,7 +211,7 @@ class Connection implements ConnectionInterface
         $dispatcher->dispatch(
             "server.emit",
             $messageEvent,
-            $this
+            $this->getSessionId()
         );
         return $this;
     }
@@ -232,7 +231,7 @@ class Connection implements ConnectionInterface
     protected function unregisterEvent()
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->removeGroupListener($this);
+        $dispatcher->removeGroupListener($this->getSessionId());
     }
 
 }

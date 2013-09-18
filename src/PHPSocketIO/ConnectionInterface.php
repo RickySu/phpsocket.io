@@ -13,4 +13,5 @@ interface ConnectionInterface
     public function clearTimeout();
     public function write(Response\ResponseInterface $response, $shutdownAfterSend = false);
     public function getRemote();
+    public function getSessionId();
 }

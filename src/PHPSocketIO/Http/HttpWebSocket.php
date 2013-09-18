@@ -94,7 +94,7 @@ class HttpWebSocket
                         return;
                     }
                     Handshake::processProtocol($frame->getData(), $this->getConnection());
-                }, $connection);
+                }, $connection->getSessionId());
 
         $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent) {
                     $message = $messageEvent->getMessage();
@@ -102,7 +102,7 @@ class HttpWebSocket
                                 'name' => $message['event'],
                                 'args' => array($message['message']),
                     ), $messageEvent->getEndpoint()));
-                }, $connection);
+                }, $connection->getSessionId());
     }
 
 }

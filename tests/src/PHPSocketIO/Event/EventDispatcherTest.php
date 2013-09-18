@@ -2,41 +2,6 @@
 namespace PHPSocketIO\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use PHPSocketIO\ConnectionInterface;
-
-class EventDispatcherMockConnection implements ConnectionInterface
-{
-
-    protected $remote;
-    public function setRemote($address, $port)
-    {
-        $this->remote = [$address, $port];
-    }
-    public function clearTimeout()
-    {
-
-    }
-
-    public function getRemote()
-    {
-        return $this->remote;
-    }
-
-    public function getRequest()
-    {
-
-    }
-
-    public function setRequest(\PHPSocketIO\Request\Request $request)
-    {
-
-    }
-
-    public function write(\PHPSocketIO\Response\ResponseInterface $response, $shutdownAfterSend = false)
-    {
-
-    }
-}
 
 class myEventDispatch extends EventDispatcher
 {
@@ -86,32 +51,30 @@ class EventDispatcherTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($event, $eventTestResultEvent[1]);
     }
 
-    public function test_dispatch_with_connection()
+    public function test_dispatch_with_uniqueid()
     {
         myEventDispatch::reset();
         $dispatcher = myEventDispatch::getDispatcher();
         $event = new Event();
         $event->triggeredEvent = [];
-        $connection1 = new EventDispatcherMockConnection();
-        $connection1->setRemote("1.1.1.1", "1");
+        $uniqueId1 = md5(rand().microtime());
 
-        $connection2 = new EventDispatcherMockConnection();
-        $connection2->setRemote("1.1.1.1", "2");
+        $uniqueId2 = md5(rand().microtime());
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 1;
-        }, $connection1);
+        }, $uniqueId1);
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 2;
-        }, $connection2);
+        }, $uniqueId2);
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 1;
-        }, $connection1);
+        }, $uniqueId1);
 
 
-        $dispatcher->dispatch("testevent", $event, $connection1);
+        $dispatcher->dispatch("testevent", $event, $uniqueId1);
 
         $this->assertEquals(array(1, 1), $event->triggeredEvent);
     }
@@ -151,19 +114,18 @@ class EventDispatcherTest extends \PHPUnit_Framework_TestCase
 
         $event = new Event();
         $event->triggeredEvent = [];
-        $connection1 = new EventDispatcherMockConnection();
-        $connection1->setRemote("1.1.1.1", "1");
+        $uniqueId1 = md5(rand().microtime());
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 1;
             $event->stopPropagation();
-        }, $connection1);
+        }, $uniqueId1);
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 2;
-        }, $connection1);
+        }, $uniqueId1);
 
-        $dispatcher->dispatch('testevent', $event, $connection1);
+        $dispatcher->dispatch('testevent', $event, $uniqueId1);
         $this->assertEquals(array(1), $event->triggeredEvent);
 
         $event = new Event();
@@ -179,29 +141,27 @@ class EventDispatcherTest extends \PHPUnit_Framework_TestCase
         $dispatcher = myEventDispatch::getDispatcher();
         $event = new Event();
         $event->triggeredEvent = [];
-        $connection1 = new EventDispatcherMockConnection();
-        $connection1->setRemote("1.1.1.1", "1");
+        $uniqueId1 = md5(rand().microtime());
 
-        $connection2 = new EventDispatcherMockConnection();
-        $connection2->setRemote("1.1.1.1", "2");
+        $uniqueId2 = md5(rand().microtime());
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 1;
-        }, $connection1);
+        }, $uniqueId1);
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 2;
-        }, $connection2);
+        }, $uniqueId2);
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 1;
-        }, $connection1);
+        }, $uniqueId1);
 
         $dispatcher->addListener('testevent', function(Event $event) {
             $event->triggeredEvent[] = 2;
-        }, $connection2);
+        }, $uniqueId2);
 
-        $dispatcher->removeGroupListener($connection1);
+        $dispatcher->removeGroupListener($uniqueId1);
         $dispatcher->dispatch('testevent', $event);
         $this->assertEquals(array(2, 2), $event->triggeredEvent);
 
