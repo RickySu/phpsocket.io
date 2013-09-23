@@ -1,5 +1,7 @@
 # PHPSocket.io
 
+[![Build Status](https://travis-ci.org/RickySu/phpsocket.io.png?branch=master)](https://travis-ci.org/RickySu/phpsocket.io)
+
 socket.io php server side alternative.
 
 ## Install
