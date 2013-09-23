@@ -23,7 +23,8 @@ $chat = $socketio
 $socketio
         ->listen(8080)
         ->onConnect(function(Connection $connection) use($socketio){
-            echo "connected {$connection->getRemote()[0]}:{$connection->getRemote()[1]}\n";
+            list($host, $port) = $connection->getRemote();
+            echo "connected $host:$port\n";
         })
         ->onRequest('/', function($connection, \EventHttpRequest $request) {
                 $response = new Response(file_get_contents(__DIR__.'/web/index.html'));
