@@ -1,6 +1,6 @@
 {
-    "name": "rickysu/php-socketio",
-    "homepage": "http://github.com/rickysu/php-socketio/",
+    "name": "rickysu/phpsocket.io",
+    "homepage": "https://github.com/RickySu/phpsocket.io",
     "require": {
         "php": ">=5.4",
         "symfony/http-foundation":  ">=2.2",
