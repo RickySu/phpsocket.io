@@ -117,6 +117,9 @@ class Connection implements ConnectionInterface
     {
         $buffer = $this->eventHTTPRequest->getOutputBuffer();
         $buffer->add($response->getContent());
+        if($contentType = $response->headers->get('Content-Type')){
+            $this->eventHTTPRequest->addHeader('Content-Type', $contentType, \EventHttpRequest::OUTPUT_HEADER);
+        }
         $this->eventHTTPRequest->sendReply($response->getStatusCode(), $response->getStatusCode());
         $this->eventHTTPRequest->free();
     }

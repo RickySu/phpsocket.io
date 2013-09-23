@@ -10,10 +10,10 @@ use PHPSocketIO\Event;
 
 $socketio = new SocketIO();
 $chat = $socketio
-        ->of('/chat')
+        ->getSockets()
         ->on('addme', function(Event\MessageEvent $messageEvent) use(&$chat){
-            $messageEvent->getConnection()->emit('update', array('msg' => "歡迎登入 {$messageEvent->getMessage()}"));
-            $chat->emit("update", array('msg' => "{$messageEvent->getMessage()} 進入聊天室了"));
+            $messageEvent->getConnection()->emit('update', array('msg' => "Welcome {$messageEvent->getMessage()}"));
+            $chat->emit("update", array('msg' => "{$messageEvent->getMessage()} is coming."));
         })
         ->on('msg', function(Event\MessageEvent $messageEvent) use(&$chat, $socketio){
             $message = $messageEvent->getMessage();
@@ -25,10 +25,14 @@ $socketio
         ->onConnect(function(Connection $connection) use($socketio){
             echo "connected {$connection->getRemote()[0]}:{$connection->getRemote()[1]}\n";
         })
-        ->onRequest('/hello', function($connection, \EventHttpRequest $request) {
-                //$connection = $event->getConnection();
-                //$connection->write(new Response("hello world!"), true);
-                $connection->sendResponse(new Response("hello world!"));
-                //$connection->write(new Response("hello world!"), true);
+        ->onRequest('/', function($connection, \EventHttpRequest $request) {
+                $response = new Response(file_get_contents(__DIR__.'/web/index.html'));
+                $response->setContentType('text/html', 'UTF-8');
+                $connection->sendResponse($response);
+        })
+        ->onRequest('/socket.io.js', function($connection, \EventHttpRequest $request) {
+                $response = new Response(file_get_contents(__DIR__.'/web/socket.io.js'));
+                $response->setContentType('text/html', 'UTF-8');
+                $connection->sendResponse($response);
         })
         ->dispatch();

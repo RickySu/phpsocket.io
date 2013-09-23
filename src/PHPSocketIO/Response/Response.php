@@ -8,7 +8,12 @@ use Symfony\Component\HttpFoundation;
  *
  * @author ricky
  */
-class Response extends HttpFoundation\Response implements ResponseInterface{
+class Response extends HttpFoundation\Response implements ResponseInterface
+{
+    public function setContentType($type, $charset)
+    {
+        $this->headers->set('Content-Type', "$type; charset=$charset");
+    }
     public function __toString()
     {
         $this->headers->set('Content-Length', strlen($this->getContent()));

@@ -138,6 +138,10 @@ class SocketIO
         return new SocketIOSocket($endpoint);
     }
 
+    /**
+     *
+     * @return SocketIOSocket
+     */
     public function getSockets()
     {
         if(!$this->sockets){
