@@ -6,5 +6,8 @@
         "symfony/http-foundation":  ">=2.2",
         "symfony/event-dispatcher": ">=2.3"
     },
+    "suggest": {
+        "ext-event": "*"
+    },
     "autoload": { "psr-0": { "PHPSocketIO": "src" } }
 }
