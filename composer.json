@@ -3,6 +3,12 @@
     "license": "MIT",
     "keywords": ["rickysu", "event", "socket.io"],
     "homepage": "https://github.com/RickySu/phpsocket.io",
+    "authors": [
+        {
+            "name": "Ricky Su",
+            "email": "ricky@ez2.us"
+        }
+    ],
     "require": {
         "php": ">=5.4",
         "symfony/http-foundation":  ">=2.2",
