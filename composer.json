@@ -1,5 +1,7 @@
 {
     "name": "rickysu/phpsocket.io",
+    "license": "MIT",
+    "keywords": ["rickysu", "event", "socket.io"],
     "homepage": "https://github.com/RickySu/phpsocket.io",
     "require": {
         "php": ">=5.4",
