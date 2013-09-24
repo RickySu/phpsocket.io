@@ -3,7 +3,6 @@ namespace PHPSocketIO\SessionStorage;
 use Symfony\Component\HttpFoundation\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
 
-
 /**
  * Description of AbstractStorage
  *
@@ -25,7 +24,6 @@ abstract class AbstractStorage implements Session\Storage\SessionStorageInterfac
      */
     protected $bags = [];
 
-
     public function setMetadataBag(MetadataBag $metaBag = null)
     {
         $this->metadataBag = $metaBag;
@@ -33,12 +31,11 @@ abstract class AbstractStorage implements Session\Storage\SessionStorageInterfac
 
     public function clear()
     {
-        if($this->metadataBag){
+        if ($this->metadataBag) {
             $this->metadataBag->clear();
         }
 
-        foreach ($this->bags as $bag)
-        {
+        foreach ($this->bags as $bag) {
             $bag->clear();
         }
 
@@ -90,7 +87,6 @@ abstract class AbstractStorage implements Session\Storage\SessionStorageInterfac
 
         $this->id = $id;
     }
-
 
     public function setName($name)
     {

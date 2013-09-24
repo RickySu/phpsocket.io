@@ -34,38 +34,41 @@ class Frame
      */
     public static function parse($data)
     {
-        if(!($data instanceof MessageQueue)){
+        if (!($data instanceof MessageQueue)) {
             $data = new MessageQueue($data);
         }
         $frame = new static();
         $frameSize = $frame->decode($data);
-        if(!$frame->isCoalesced()){
+        if (!$frame->isCoalesced()) {
             return $frameSize;
         }
         $data->shift($frameSize);
+
         return $frame;
     }
 
     /**
      *
-     * @param string $data
+     * @param  string $data
      * @return Frame
      */
     public static function generate($data)
     {
         $frame = new static($data);
+
         return $frame;
     }
 
     /**
      *
-     * @param string $data
+     * @param  string $data
      * @return Frame
      */
     public static function close($data)
     {
         $frame = new static($data, true, static::OP_CLOSE);
         $frame->setClosed();
+
         return $frame;
     }
 
@@ -129,6 +132,7 @@ class Frame
         for ($i = 0; $i < static::MASK_LENGTH; $i++) {
             $maskingKey .= pack('C', rand(0, 255));
         }
+
         return $maskingKey;
     }
 
@@ -138,6 +142,7 @@ class Frame
         for ($i = 0, $len = strlen($payload); $i < $len; $i++) {
             $applied .= $payload[$i] ^ $maskingKey[$i % static::MASK_LENGTH];
         }
+
         return $applied;
     }
 
@@ -147,6 +152,7 @@ class Frame
             return $payload;
         }
         $maskingKey = $this->generateMaskingKey();
+
         return $maskingKey . $this->applyMask($maskingKey, $payload);
     }
 
@@ -161,6 +167,7 @@ class Frame
             if (($packedPayloadLength = substr($encodedData, 2, 2)) === false) {
                 return [0, 0];
             }
+
             return [unpack("n", $packedPayloadLength)[1] + 2, 2];
         }
 
@@ -169,6 +176,7 @@ class Frame
                 return [0, 0];
             }
             $payloadLength = unpack("N2", $packedPayloadLength);
+
             return [($packedPayloadLength[1] << 32) | $packedPayloadLength[2] + 8, 8];
         }
     }
@@ -197,9 +205,10 @@ class Frame
         $maskingKey = substr($encodedData, 2 + $extendedPayloadBytes, static::MASK_LENGTH);
         $data = $this->applyMask($maskingKey, substr($encodedData, 2 + $extendedPayloadBytes + static::MASK_LENGTH));
         $this->setData($data);
-        if(strlen($encodedData) >= $totalFramLength){
+        if (strlen($encodedData) >= $totalFramLength) {
             $this->isCoalesced = true;
         }
+
         return $totalFramLength;
     }
 
@@ -228,6 +237,7 @@ class Frame
         if ($this->getRSV1() && $this->getRSV2() && $this->getRSV3()) {
             return false;
         }
+
         return true;
     }
 
@@ -239,6 +249,7 @@ class Frame
     public function encode()
     {
         $this->isCoalesced = true;
+
         return pack('CC', $this->firstByte, $this->secondByte) . $this->extendedPayload . $this->maskPayload($this->data);
     }
 
@@ -248,12 +259,14 @@ class Frame
         $size = strlen($data);
         if ($size < 126) {
             $secondByte |= $size;
+
             return;
         }
 
         if ($size <= 65535) {  //use 2 bytes extended payload
             $secondByte |= 126;
             $extendedPayload = pack("n", $size);
+
             return;
         }
 

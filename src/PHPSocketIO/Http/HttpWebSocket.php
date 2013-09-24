@@ -24,12 +24,14 @@ class HttpWebSocket
     public function setRequest(Request $request)
     {
         $this->request = $request;
+
         return true;
     }
 
     public function setConnection(ConnectionInterface $connection)
     {
         $this->connection = $connection;
+
         return true;
     }
 
@@ -59,6 +61,7 @@ class HttpWebSocket
         $this->websocket = new WebSocket\WebSocket();
         if (!($handshakeResponse = $this->websocket->getHandshakeReponse($request))) {
             $this->getConnection()->write(new Response('bad protocol', 400), true);
+
             return;
         }
         $this->getConnection()->write($handshakeResponse);
@@ -69,7 +72,7 @@ class HttpWebSocket
         ));
         $this->setHeartbeatTimeout();
         $dispatcher = Event\EventDispatcher::getDispatcher();
-        $dispatcher->addListener('connect', function() use($dispatcher, $uniqueId){
+        $dispatcher->addListener('connect', function() use ($dispatcher, $uniqueId) {
             $dispatcher->removeGroupListener($uniqueId);
             $this->initEvent(array(
                 $this->connection->getSessionId(),

@@ -9,7 +9,7 @@ class EventDispatcher
 
     protected $events = array();
     protected $groupEvents = array();
-    static protected $dispatcher = null;
+    protected static $dispatcher = null;
 
     /**
      *
@@ -20,6 +20,7 @@ class EventDispatcher
         if (self::$dispatcher === null) {
             self::$dispatcher = new static();
         }
+
         return self::$dispatcher;
     }
 
@@ -35,8 +36,8 @@ class EventDispatcher
         }
         krsort($listeners);
         $processCount = 0;
-        foreach($listeners as $listener){
-            foreach($listener as $callback){
+        foreach ($listeners as $listener) {
+            foreach ($listener as $callback) {
                 if ($event && $event->isPropagationStopped()) {
                     return $processCount;
                 }
@@ -44,6 +45,7 @@ class EventDispatcher
                 $processCount++;
             }
         }
+
         return $processCount;
     }
 
@@ -69,8 +71,8 @@ class EventDispatcher
 
         $listeners=[];
         foreach ($this->groupEvents[$group][$eventName] as $uniqueKey) {
-            if(isset($this->events[$eventName]) && isset($this->events[$eventName][$uniqueKey])){
-                foreach($this->events[$eventName][$uniqueKey] as $listenerArray){
+            if (isset($this->events[$eventName]) && isset($this->events[$eventName][$uniqueKey])) {
+                foreach ($this->events[$eventName][$uniqueKey] as $listenerArray) {
                     list($listener, $priority) = $listenerArray;
                     $listeners[$priority][] = $listener;
                 }
@@ -78,8 +80,8 @@ class EventDispatcher
         }
         krsort($listeners);
         $processCount = 0;
-        foreach($listeners as $listener){
-            foreach($listener as $callback){
+        foreach ($listeners as $listener) {
+            foreach ($listener as $callback) {
                 if ($event && $event->isPropagationStopped()) {
                     return $processCount;
                 }
@@ -87,17 +89,18 @@ class EventDispatcher
                 $processCount++;
             }
         }
+
         return $processCount;
     }
 
     public function addListener($eventName, $listener, $groups = null, $priority = 0)
     {
         $uniqueKey = sha1(microtime().rand().rand(), true);
-        if(!is_array($groups)){
+        if (!is_array($groups)) {
             $groups = [$groups];
         }
         $groups = array_unique($groups);
-        foreach($groups as $group){
+        foreach ($groups as $group) {
             if (!isset($this->events[$eventName][$group])) {
                 $this->events[$eventName][$group] = array();
             }
@@ -125,11 +128,11 @@ class EventDispatcher
         if (!isset($this->events[$eventName])) {
             return;
         }
-        foreach($this->groupEvents[$group][$eventName] as $uniqueKey){
+        foreach ($this->groupEvents[$group][$eventName] as $uniqueKey) {
             unset($this->events[$eventName][$uniqueKey]);
         }
         unset($this->groupEvents[$group][$eventName]);
-        if(count($this->groupEvents[$group]) == 0){
+        if (count($this->groupEvents[$group]) == 0) {
             unset($this->groupEvents[$group]);
         }
     }

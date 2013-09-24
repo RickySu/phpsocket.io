@@ -27,6 +27,7 @@ class WebSocket
     public function onMessage($data)
     {
         $this->messageQueue->add($data);
+
         return Frame::parse($this->messageQueue);
     }
 
@@ -43,6 +44,7 @@ class WebSocket
         $acceptKey = $this->generateAcceptKey($key);
         $response = new ResponseWebSocket();
         $response->headers->set('Sec-WebSocket-Accept', $acceptKey);
+
         return $response;
     }
 
@@ -63,4 +65,3 @@ class WebSocket
 
     //put your code here
 }
-

@@ -44,11 +44,11 @@ class SocketIO
 
     protected function eventBufferEventGc()
     {
-        foreach($this->eventBufferEvents as $eventBufferEvent){
+        foreach ($this->eventBufferEvents as $eventBufferEvent) {
             $eventBufferEvent->setCallbacks(null, null, null);
             $eventBufferEvent->free();
         }
-        foreach($this->requests as $request){
+        foreach ($this->requests as $request) {
             $request->closeConnection();
         }
         $this->requests=array();
@@ -58,8 +58,8 @@ class SocketIO
     public function dispatch()
     {
         $this->createEventListener();
-        while(true){
-            if($this->baseEvent->gotExit()){
+        while (true) {
+            if ($this->baseEvent->gotExit()) {
                 break;
             }
             $this->baseEvent->dispatch();
@@ -70,12 +70,14 @@ class SocketIO
     public function onConnect($callback)
     {
         $this->onConnectCallback = $callback;
+
         return $this;
     }
 
     public function onRequest($query, $callback)
     {
         $this->httpRequests[] = [$query, $callback];
+
         return $this;
     }
 
@@ -98,7 +100,7 @@ class SocketIO
         $this->eventHttp->bind($this->listenHost, $this->listenPort);
         $this->initSession();
         $this->eventHttp->setDefaultCallback(function($request){
-            $connection = new Connection($this->baseEvent, $this->namespace, function(\EventBufferEvent $event) use($request) {
+            $connection = new Connection($this->baseEvent, $this->namespace, function(\EventBufferEvent $event) use ($request) {
                 $this->eventBufferEvents[]=$event;
                 $this->requests[]=$request;
                 $this->baseEvent->stop();
@@ -107,10 +109,10 @@ class SocketIO
             $connection->parseHTTP($request);
             call_user_func($this->onConnectCallback, $connection);
         });
-        foreach($this->httpRequests as $httpRequest){
+        foreach ($this->httpRequests as $httpRequest) {
             list($query, $callback) = $httpRequest;
-            $this->eventHttp->setCallback($query, function($request) use($callback){
-                $connection = new Connection($this->baseEvent, $this->namespace, function(\EventBufferEvent $event) use($request) {
+            $this->eventHttp->setCallback($query, function($request) use ($callback) {
+                $connection = new Connection($this->baseEvent, $this->namespace, function(\EventBufferEvent $event) use ($request) {
                     $this->eventBufferEvents[]=$event;
                     $this->requests[]=$request;
                     $this->baseEvent->stop();
@@ -130,7 +132,7 @@ class SocketIO
 
     /**
      *
-     * @param string $endpoint
+     * @param  string         $endpoint
      * @return SocketIOSocket
      */
     public function of($endpoint)
@@ -144,9 +146,10 @@ class SocketIO
      */
     public function getSockets()
     {
-        if(!$this->sockets){
+        if (!$this->sockets) {
             $this->sockets = $this->of('');
         }
+
         return $this->sockets;
     }
 
@@ -154,6 +157,7 @@ class SocketIO
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("client.$eventName", $callback);
+
         return $this;
     }
 

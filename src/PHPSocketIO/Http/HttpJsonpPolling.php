@@ -18,6 +18,7 @@ class HttpJsonpPolling extends HttpPolling
     protected function setResponseHeaders(ResponseInterface $response)
     {
         $response->headers->set('X-XSS-Protection', 0);
+
         return $response;
     }
 

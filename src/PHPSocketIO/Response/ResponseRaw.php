@@ -6,15 +6,17 @@ namespace PHPSocketIO\Response;
  *
  * @author ricky
  */
-class ResponseRaw implements ResponseInterface {
-
+class ResponseRaw implements ResponseInterface
+{
     protected $content;
 
-    public function __construct($content) {
+    public function __construct($content)
+    {
         $this->content = $content;
     }
 
-    public function __toString() {
+    public function __toString()
+    {
         return $this->content;
     }
 

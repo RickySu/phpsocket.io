@@ -36,14 +36,14 @@ class MessageQueue
 
     public function shift($size)
     {
-        if($size > strlen($this->data)){
+        if ($size > strlen($this->data)) {
             return false;
         }
 
         $message = substr($this->data, 0, $size);
 
         $this->data = substr($this->data, $size);
+
         return $message;
     }
 }
-

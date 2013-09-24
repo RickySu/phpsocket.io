@@ -21,6 +21,7 @@ class HttpXHRPolling extends HttpPolling
         $response->headers->set('Content-Type', 'text/plain');
         $response->headers->set('Access-Control-Allow-Origin', $this->request->headers->get('Origin'));
         $response->headers->set('Access-Control-Allow-Credentials', 'true');
+
         return $response;
     }
 

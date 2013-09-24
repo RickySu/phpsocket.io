@@ -30,12 +30,14 @@ class MessageEvent extends Event
     public function setMessage($message)
     {
         $this->message = $message;
+
         return true;
     }
 
     public function setConnection(ConnectionInterface $connection)
     {
         $this->connection = $connection;
+
         return true;
     }
 
@@ -50,4 +52,3 @@ class MessageEvent extends Event
     }
 
 }
-

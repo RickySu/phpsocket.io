@@ -28,19 +28,19 @@ abstract class HttpPolling
      */
     protected $request;
 
-    protected $defuleTimeout = 10;
-
-
+    protected $defuleTimeout = 60;
 
     public function setRequest(Request $request)
     {
         $this->request = $request;
+
         return true;
     }
 
     public function setConnection(ConnectionInterface $connection)
     {
         $this->connection = $connection;
+
         return true;
     }
 
@@ -66,17 +66,20 @@ abstract class HttpPolling
     {
         $this->setRequest($request);
         $this->setConnection($request->getConnection());
-        if(!$sessionInited){
+        if (!$sessionInited) {
             $this->init();
+
             return;
         }
-        if($request->isMethod('POST')){
+        if ($request->isMethod('POST')) {
             $this->processPOSTMethod();
+
             return;
         }
         $this->enterPollingMode();
         $this->initEvent();
         $this->getConnection()->setTimeout($this->defuleTimeout, function(){$this->onTimeout();});
+
         return;
     }
 

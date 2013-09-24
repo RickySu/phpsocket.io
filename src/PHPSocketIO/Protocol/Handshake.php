@@ -25,7 +25,7 @@ class Handshake
     {
         list($uri, ) = explode('?', $request->getRequestUri());
         $requestDocSplit = explode('/', substr($uri, 1));
-        if($requestDocSplit[0] != $request->getConnection()->getNamespace()){
+        if ($requestDocSplit[0] != $request->getConnection()->getNamespace()) {
             return self::PROTOCOL_HTMLFILE;
         }
 
@@ -35,7 +35,7 @@ class Handshake
     protected static function parseRequest(Request $request, $requestDocSplit)
     {
 
-        if(!isset($requestDocSplit[1]) || $requestDocSplit[1]!=1){
+        if (!isset($requestDocSplit[1]) || $requestDocSplit[1]!=1) {
             return new Response('bad protocol', 400);
         }
 
@@ -44,25 +44,26 @@ class Handshake
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->dispatch('request.init.session', $requestEvent);
 
-        if(!isset($requestDocSplit[2]) || $requestDocSplit[2]==''){
+        if (!isset($requestDocSplit[2]) || $requestDocSplit[2]=='') {
             return static::generateHanshakeResponse($request);
         }
 
-        if(!in_array($requestDocSplit[2], static::$validTransportID)){
+        if (!in_array($requestDocSplit[2], static::$validTransportID)) {
             return new Response('bad protocol', 400);
         }
+
         return static::upgradeProtocol($request, $requestDocSplit[2], $requestDocSplit[3]);
     }
 
     public static function processProtocol($data, ConnectionInterface $connection)
     {
-        if(!preg_match('/^(.*?):(.*?):(.*)/i', $data, $match)){
+        if (!preg_match('/^(.*?):(.*?):(.*)/i', $data, $match)) {
             return new Response('bad protocol', 404);
         }
         list($raw, $type, $id, $postRawData) = $match;
         list($endpoint, ) = explode(':', $postRawData);
         $jsonData = substr($postRawData, strlen($endpoint) + 1);
-        switch($type){
+        switch ($type) {
             case 1:    //Connect
                 $connection->getRequest()->getSession()->set('endpoint', $endpoint);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
@@ -72,7 +73,7 @@ class Handshake
                 break;
             case 5:    //Event
                 $eventData = json_decode($jsonData, true);
-                if(!isset($eventData['name']) && !isset($eventData['args'])){
+                if (!isset($eventData['name']) && !isset($eventData['args'])) {
                     return new Response('bad protocol', 402);
                 }
                 $messageEvent = new Event\MessageEvent();
@@ -83,6 +84,7 @@ class Handshake
                 $dispatcher->dispatch("client.{$eventData['name']}", $messageEvent, $endpoint);
                 break;
         }
+
         return new Response('1');
     }
 
@@ -93,11 +95,11 @@ class Handshake
         $session->start();
         $sessionInited = $session->get('sessionInited');
 
-        if(!$sessionInited){
+        if (!$sessionInited) {
             $session->set('sessionInited', true);
         }
 
-        switch ($transportId){
+        switch ($transportId) {
             case static::PROTOCOL_JSONP_POLLING:
                 return new Http\HttpJsonpPolling($request, $sessionInited);
             case static::PROTOCOL_XHR_POLLING:
@@ -117,6 +119,7 @@ class Handshake
         $response->headers->set('Content-Type', 'text/plain');
         $response->headers->set('Access-Control-Allow-Origin', $request->headers->get('Origin'));
         $response->headers->set('Access-Control-Allow-Credentials', 'true');
+
         return $response;
     }
 

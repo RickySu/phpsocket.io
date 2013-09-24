@@ -71,19 +71,18 @@ class Connection implements ConnectionInterface
     protected function emitPendingEvent()
     {
         $pendingEvent = $this->getRequest()->getSession()->get('pendingEvent', []);
-        foreach($pendingEvent as $eventName => &$events){
-            foreach($events as $index => $event){
-                if(time() - $event['timestamp'] < 5){
+        foreach ($pendingEvent as $eventName => &$events) {
+            foreach ($events as $index => $event) {
+                if (time() - $event['timestamp'] < 5) {
                     $receive = $this->dispatchEvent($eventName, $event['message']);
-                    if($receive){
+                    if ($receive) {
                         unset($events[$index]);
                     }
-                }
-                else{
+                } else {
                     unset($events[$index]);
                 }
             }
-            if(count($pendingEvent[$eventName]) == 0){
+            if (count($pendingEvent[$eventName]) == 0) {
                 unset($pendingEvent[$eventName]);
             }
         }
@@ -102,9 +101,10 @@ class Connection implements ConnectionInterface
 
     public function getSessionId()
     {
-        if($this->getRequest() && $this->getRequest()->getSession()){
+        if ($this->getRequest() && $this->getRequest()->getSession()) {
             return $this->getRequest()->getSession()->getId();
         }
+
         return null;
     }
 
@@ -117,7 +117,7 @@ class Connection implements ConnectionInterface
     {
         $buffer = $this->eventHTTPRequest->getOutputBuffer();
         $buffer->add($response->getContent());
-        if($contentType = $response->headers->get('Content-Type')){
+        if ($contentType = $response->headers->get('Content-Type')) {
             $this->eventHTTPRequest->addHeader('Content-Type', $contentType, \EventHttpRequest::OUTPUT_HEADER);
         }
         $this->eventHTTPRequest->sendReply($response->getStatusCode(), $response->getStatusCode());
@@ -126,7 +126,7 @@ class Connection implements ConnectionInterface
 
     protected function getEventBufferEvent()
     {
-        if(!$this->eventBufferEvent){
+        if (!$this->eventBufferEvent) {
             $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
                 $data  = $this->eventBufferEvent->read(4096);
@@ -136,13 +136,14 @@ class Connection implements ConnectionInterface
                 $messageEvent->setConnection($this);
                 $dispatcher->dispatch("socket.receive", $messageEvent, $this->getSessionId());
             }, function(){
-                if($this->shutdownAfterSend){
+                if ($this->shutdownAfterSend) {
                     $this->free();
                 }
             }, function(){
             });
             $this->eventBufferEvent->enable(\Event::READ | \Event::WRITE);
         }
+
         return $this->eventBufferEvent;
     }
 
@@ -163,28 +164,30 @@ class Connection implements ConnectionInterface
 
     public function getRemote()
     {
-        if(!$this->remote && $this->eventHTTPRequest){
+        if (!$this->remote && $this->eventHTTPRequest) {
             $this->eventHTTPRequest->getEventHttpConnection()->getPeer($address, $port);
             $this->remote = array($address, $port);
         }
+
         return $this->remote;
     }
 
-    public function getNamespace(){
+    public function getNamespace()
+    {
         return $this->namespace;
     }
 
     public function free()
     {
-        if(!$this->baseEvent){
+        if (!$this->baseEvent) {
             return;
         }
         $this->clearTimeout();
         $this->unregisterEvent();
-        if($this->request && $this->request->getSession()){
+        if ($this->request && $this->request->getSession()) {
            $this->request->getSession()->save();
         }
-        if($this->eventBufferEvent){
+        if ($this->eventBufferEvent) {
             call_user_func($this->eventBufferEventGCCallback, $this->eventBufferEvent, $this->eventHTTPRequest);
         }
         $this->baseEvent = null;
@@ -199,7 +202,7 @@ class Connection implements ConnectionInterface
 
     public function setTimeout($timer, $callback)
     {
-         $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use($callback){
+         $this->timeoutEvent = new \Event($this->baseEvent, -1, \Event::TIMEOUT, function($fd, $what, $event) use ($callback) {
              $callback();
          });
          $this->timeoutEvent->data = $this->timeoutEvent;
@@ -208,7 +211,7 @@ class Connection implements ConnectionInterface
 
     public function clearTimeout()
     {
-        if($this->timeoutEvent === null){
+        if ($this->timeoutEvent === null) {
             return;
         }
         $this->timeoutEvent->data = null;
@@ -226,12 +229,13 @@ class Connection implements ConnectionInterface
         $group[] = $this->getSessionId();
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener("client.$eventName", $callback, $group);
+
         return $this;
     }
 
     public function emit($eventName, $message)
     {
-        if(!$this->dispatchEvent($eventName, $message)){
+        if (!$this->dispatchEvent($eventName, $message)) {
             $pendingEvent = $this->getRequest()->getSession()->get('pendingEvent', []);
             $pendingEvent[$eventName][] = array(
                 'timestamp' => time(),
@@ -239,6 +243,7 @@ class Connection implements ConnectionInterface
             );
             $this->getRequest()->getSession()->set('pendingEvent', $pendingEvent);
         }
+
         return $this;
     }
 
@@ -251,6 +256,7 @@ class Connection implements ConnectionInterface
                 ));
         $messageEvent->setConnection($this);
         $dispatcher = Event\EventDispatcher::getDispatcher();
+
         return $dispatcher->dispatch(
             "server.emit",
             $messageEvent,
@@ -261,12 +267,14 @@ class Connection implements ConnectionInterface
     public function onRecieve($callback)
     {
         $this->onReceiveCallbacks[]=$callback;
+
         return $this;
     }
 
     public function onWriteBufferEmpty($callback)
     {
         $this->onWriteBufferEmptyCallbacks[]=$callback;
+
         return $this;
     }
 
@@ -274,7 +282,7 @@ class Connection implements ConnectionInterface
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $groups = array_keys($this->registeredEventGroups);
-        foreach($groups as $group){
+        foreach ($groups as $group) {
             $dispatcher->removeGroupListener($group);
         }
         $this->registeredEventGroups = [];

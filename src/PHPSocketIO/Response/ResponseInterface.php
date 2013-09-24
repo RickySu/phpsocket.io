@@ -6,8 +6,8 @@ namespace PHPSocketIO\Response;
  *
  * @author ricky
  */
-interface ResponseInterface {
-
+interface ResponseInterface
+{
     public function __toString();
-    
+
 }

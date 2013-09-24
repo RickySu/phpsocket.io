@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
  */
 class MemoryStorage extends AbstractStorage
 {
-    static protected $sessions;
+    protected static $sessions;
 
     /**
      * @var boolean
@@ -40,29 +40,27 @@ class MemoryStorage extends AbstractStorage
             $this->start();
         }
 
-        if($this->metadataBag){
+        if ($this->metadataBag) {
             $this->metadataBag->stampNew($lifetime);
         }
 
-        if(isset(static::$sessions[$this->id])){
+        if (isset(static::$sessions[$this->id])) {
             unset(static::$sessions[$this->id]);
         }
 
         $this->id = $this->generateId();
 
-        if($destroy){
+        if ($destroy) {
             $this->clear();
         }
 
         return true;
     }
 
-
     public function save()
     {
         static::$sessions[$this->id] = array('lastupdate'=> time(),'metadataBag' => $this->metadataBag, 'bags' => $this->bags);
     }
-
 
     public function start()
     {
@@ -81,7 +79,7 @@ class MemoryStorage extends AbstractStorage
 
     protected function loadSession()
     {
-        if(isset(static::$sessions[$this->id])){
+        if (isset(static::$sessions[$this->id])) {
             $this->metadataBag = static::$sessions[$this->id]['metadataBag'];
             $this->bags = static::$sessions[$this->id]['bags'];
         }
