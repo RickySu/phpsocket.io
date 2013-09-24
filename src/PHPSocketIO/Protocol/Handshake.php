@@ -15,7 +15,7 @@ class Handshake
     const PROTOCOL_JSONP_POLLING = 'jsonp-polling';
 
     protected static $validTransportID = array(
-        //self::PROTOCOL_WEBSOCKET,
+        self::PROTOCOL_WEBSOCKET,
         self::PROTOCOL_XHR_POLLING,
         self::PROTOCOL_HTMLFILE,
         self::PROTOCOL_JSONP_POLLING,
