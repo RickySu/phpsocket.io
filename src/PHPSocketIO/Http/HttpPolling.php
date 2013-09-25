@@ -28,7 +28,7 @@ abstract class HttpPolling
      */
     protected $request;
 
-    protected $defuleTimeout = 60;
+    protected $defuleTimeout = 50;
 
     public function setRequest(Request $request)
     {
@@ -95,9 +95,19 @@ abstract class HttpPolling
     protected function initEvent()
     {
         $dispatcher = Event\EventDispatcher::getDispatcher();
+        $dispatcher->addListener("connect", function() {
+            $endpoint = $this->getRequest()->getSession()->get('endpoint');
+            $this->writeChunkEnd(ProtocolBuilder::Connect($endpoint));
+        },array(
+            $this->connection->getSessionId(),
+        ));
         $dispatcher->addListener("server.emit", function(Event\MessageEvent $messageEvent){
-            $endpoint = $this->getRequest()->getSession()->get('endpoint', $messageEvent->getEndpoint());
             $message = $messageEvent->getMessage();
+            if($this->connection->isConnectionClose()){
+                $this->connection->queuePendingEmitEvent("server.emit", $message);
+                return;
+            }
+            $endpoint = $this->getRequest()->getSession()->get('endpoint', $messageEvent->getEndpoint());
             $this->writeChunkEnd(ProtocolBuilder::Event(array(
                 'name' => $message['event'],
                 'args' => array($message['message']),

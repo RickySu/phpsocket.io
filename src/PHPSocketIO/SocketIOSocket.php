@@ -28,7 +28,6 @@ class SocketIOSocket
         $messageEvent->setEndpoint($this->endpoint);
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->dispatch("server.emit", $messageEvent, $this->endpoint);
-
         return $this;
     }
 

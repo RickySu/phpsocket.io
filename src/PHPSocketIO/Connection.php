@@ -66,15 +66,20 @@ class Connection implements ConnectionInterface
         Http\Http::handleRequest($request);
         $this->prepareEventGroup();
         $this->emitPendingEvent();
+        $this->dispatchQueueEventEvent();
     }
 
-    protected function emitPendingEvent()
+    protected function dispatchQueueEventEvent()
     {
-        $pendingEvent = $this->getRequest()->getSession()->get('pendingEvent', []);
-        foreach ($pendingEvent as $eventName => &$events) {
+        if(!$this->getRequest()->getSession()){
+            return;
+        }
+        $queueEvent = $this->getRequest()->getSession()->get('queueEvent', []);
+        $dispatcher = Event\EventDispatcher::getDispatcher();
+        foreach ($queueEvent as $eventName => &$events) {
             foreach ($events as $index => $event) {
                 if (time() - $event['timestamp'] < 5) {
-                    $receive = $this->dispatchEvent($eventName, $event['message']);
+                    $receive = $dispatcher->dispatch($eventName, $event['event'], $event['group']);
                     if ($receive) {
                         unset($events[$index]);
                     }
@@ -82,11 +87,35 @@ class Connection implements ConnectionInterface
                     unset($events[$index]);
                 }
             }
-            if (count($pendingEvent[$eventName]) == 0) {
-                unset($pendingEvent[$eventName]);
+            if (count($queueEvent[$eventName]) == 0) {
+                unset($queueEvent[$eventName]);
             }
         }
-        $this->getRequest()->getSession()->set('pendingEvent', $pendingEvent);
+        $this->getRequest()->getSession()->set('queueEvent', $queueEvent);
+    }
+
+    protected function emitPendingEvent()
+    {
+        if(!$this->getRequest()->getSession()){
+            return;
+        }
+        $pendingEmitEvent = $this->getRequest()->getSession()->get('pendingEmitEvent', []);
+        foreach ($pendingEmitEvent as $eventName => &$events) {
+            foreach ($events as $index => $event) {
+                if (time() - $event['timestamp'] < 5) {
+                    $receive = $this->dispatchEmitEvent($eventName, $event['message']);
+                    if ($receive) {
+                        unset($events[$index]);
+                    }
+                } else {
+                    unset($events[$index]);
+                }
+            }
+            if (count($pendingEmitEvent[$eventName]) == 0) {
+                unset($pendingEmitEvent[$eventName]);
+            }
+        }
+        $this->getRequest()->getSession()->set('pendingEmitEvent', $pendingEmitEvent);
     }
 
     protected function prepareEventGroup()
@@ -151,6 +180,11 @@ class Connection implements ConnectionInterface
     {
         $this->shutdownAfterSend = $shutdownAfterSend;
         $this->getEventBufferEvent()->write($response);
+    }
+
+    public function isConnectionClose()
+    {
+        return $this->shutdownAfterSend;
     }
 
     /**
@@ -233,21 +267,38 @@ class Connection implements ConnectionInterface
         return $this;
     }
 
+    public function queueEvent($eventName, $event = null, $group = null)
+    {
+        $queueEvent = $this->getRequest()->getSession()->get('queueEvent', []);
+        $queueEvent[$eventName][] = array(
+            'timestamp' => time(),
+            'event' => $event,
+            'group' => $group,
+        );
+        $this->getRequest()->getSession()->set('queueEvent', $queueEvent);
+    }
+
     public function emit($eventName, $message)
     {
-        if (!$this->dispatchEvent($eventName, $message)) {
-            $pendingEvent = $this->getRequest()->getSession()->get('pendingEvent', []);
-            $pendingEvent[$eventName][] = array(
-                'timestamp' => time(),
-                'message' => $message,
-            );
-            $this->getRequest()->getSession()->set('pendingEvent', $pendingEvent);
+        if ($this->isConnectionClose() || !$this->dispatchEmitEvent($eventName, $message)) {
+            $this->queuePendingEmitEvent($eventName, $message);
         }
 
         return $this;
     }
 
-    protected function dispatchEvent($eventName, $message)
+    public function queuePendingEmitEvent($eventName, $message)
+    {
+        $pendingEmitEvent = $this->getRequest()->getSession()->get('pendingEmitEvent', []);
+        $pendingEmitEvent[$eventName][] = array(
+            'timestamp' => time(),
+            'message' => $message,
+        );
+        $this->getRequest()->getSession()->set('pendingEmitEvent', $pendingEmitEvent);
+        return $this;
+    }
+
+    protected function dispatchEmitEvent($eventName, $message)
     {
         $messageEvent = new Event\MessageEvent();
         $messageEvent->setMessage(array(

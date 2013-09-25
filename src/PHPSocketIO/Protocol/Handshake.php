@@ -66,8 +66,10 @@ class Handshake
         switch ($type) {
             case 1:    //Connect
                 $connection->getRequest()->getSession()->set('endpoint', $endpoint);
-                $dispatcher = Event\EventDispatcher::getDispatcher();
-                $dispatcher->dispatch("connect");
+                if(Event\EventDispatcher::getDispatcher()->dispatch('connect', null, $connection->getSessionId())){
+                    break;
+                }
+                $connection->queueEvent('connect', null, $connection->getSessionId());
                 break;
             case 2:    //Heartbeat
                 break;

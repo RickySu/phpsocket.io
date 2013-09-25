@@ -9,9 +9,9 @@ class Builder
         return "5::$endpoint:".json_encode($data);
     }
 
-    public static function Connect()
+    public static function Connect($endpoint = null)
     {
-        return '1::';
+        return "1::$endpoint";
     }
 
     public static function Heartbeat()

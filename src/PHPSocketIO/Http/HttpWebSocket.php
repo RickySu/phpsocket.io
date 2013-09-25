@@ -67,18 +67,22 @@ class HttpWebSocket
         $this->getConnection()->write($handshakeResponse);
         $this->sendData(ProtocolBuilder::Connect());
         $this->initEvent(array(
-            $uniqueId,
             $this->connection->getSessionId(),
+            $uniqueId,
         ));
         $this->setHeartbeatTimeout();
         $dispatcher = Event\EventDispatcher::getDispatcher();
         $dispatcher->addListener('connect', function() use ($dispatcher, $uniqueId) {
+            $endpoint = $this->getRequest()->getSession()->get('endpoint');
             $dispatcher->removeGroupListener($uniqueId);
             $this->initEvent(array(
                 $this->connection->getSessionId(),
-                $this->getRequest()->getSession()->get('endpoint'),
+                $endpoint,
             ));
-        });
+            $this->sendData(ProtocolBuilder::Connect($endpoint));
+        }, array(
+            $this->getConnection()->getSessionId(),
+        ));
     }
 
     protected function setHeartbeatTimeout()
