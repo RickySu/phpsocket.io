@@ -1,6 +1,6 @@
 <?php
 
-$loader = include '../vendor/autoload.php';
+$loader = include '../autoload.php.dist';
 $loader->add('PHPSocketIO', __DIR__ . '/../src');
 
 use PHPSocketIO\SocketIO;
