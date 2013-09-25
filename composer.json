@@ -1,5 +1,6 @@
 {
     "name": "rickysu/phpsocket.io",
+    "description": "a socket.io php server side alternative",
     "license": "MIT",
     "keywords": ["rickysu", "event", "socket.io"],
     "homepage": "https://github.com/RickySu/phpsocket.io",
