@@ -135,7 +135,7 @@ class SocketIO
      * @param  string         $endpoint
      * @return SocketIOSocket
      */
-    public function of($endpoint)
+    public function of($endpoint = null)
     {
         return new SocketIOSocket($endpoint);
     }
@@ -147,7 +147,7 @@ class SocketIO
     public function getSockets()
     {
         if (!$this->sockets) {
-            $this->sockets = $this->of('');
+            $this->sockets = $this->of();
         }
 
         return $this->sockets;
