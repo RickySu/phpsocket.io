@@ -28,6 +28,7 @@ class SocketIO
             $baseEvent = new \EventBase();
         }
         $this->baseEvent = $baseEvent;
+        $this->onConnectCallback = function(){};
     }
 
     public function listen($host, $port = null)
