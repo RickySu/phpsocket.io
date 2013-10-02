@@ -5,24 +5,58 @@
         <title>Chat</title>
         <script src="socket.io.js"></script>
         <script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
+        <style>
+            #content {
+              width: 400px;
+              height: 300px;
+              border: 1px solid;
+              overflow: auto;
+            }
+            #content >div{
+              border-bottom: 1px solid;
+            }
+            #content >div >label {
+              color:  green;
+            }
+            #content >div >span {
+              color: blue;
+              display: inline-block;
+              width:  50px;
+            }
+            
+        </style>
     </head>
     <body>
-    <div id='content' style='width:400px;height:300px;border:1px solid;overflow:auto;'>
+    <div id='content'>
     </div>
     <form>
     <input type='text' value='' /><input type='submit' value='send' />
     </form>
     <script>
         $(function(){
+            var myname = null;
             var socket = io.connect('http://127.0.0.1:8080/');
-            socket.on('connect', function(){
-                socket.emit('addme', prompt("yourname"));
+            socket.on('update',function(data) {
+                if(data.msg == '/clear') {
+                    $('#content').empty();
+                    return;
+                }                
+                if(data.user) {
+                    $('#content').append('<div><span>'+data.user+':</span>'+data.msg+'</div>');
+                }
+                else {
+                    $('#content').append('<div><label>'+data.msg+'</label></div>');
+                }
             });
-            socket.on('update',function(data){
-                $('#content').append('<div>'+data.msg+'</div>');
-            });
-            $('form').submit(function(){
-                socket.emit('msg', { msg:$('input[type=text]').val() });
+            $('form').submit(function() {
+                if(myname == null) {
+                    myname = prompt("yourname");
+                    socket.emit('addme', myname);
+                }
+                socket.emit('msg', { 
+                    msg:    $('input[type=text]').val(),
+                    user:   myname
+                });
                 $('input[type=text]').val('');
                 return false;
             });
