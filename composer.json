@@ -16,7 +16,7 @@
         "symfony/event-dispatcher": ">=2.3"
     },
     "suggest": {
-        "ext-event": "*"
+        "ext-event": "1.8.1"
     },
     "autoload": { "psr-0": { "PHPSocketIO": "src" } }
 }

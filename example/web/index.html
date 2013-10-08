@@ -4,11 +4,11 @@
         <meta charset="utf-8" />
         <title>Chat</title>
         <script src="socket.io.js"></script>
-        <script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
+        <script src='http://localhost/~ricky/jquery.js'></script>
         <style>
             #content {
               width:  400px;
-              height: 300px;
+              height: 280px;
               border: 1px solid;
               overflow: auto;
               float:    left;
@@ -24,7 +24,7 @@
               display: inline-block;
               width:  50px;
             }
-            
+
         </style>
     </head>
     <body>
@@ -40,7 +40,7 @@
                 if(data.msg == '/clear') {
                     $('#content').empty();
                     return;
-                }                
+                }
                 if(data.user) {
                     $('#content').append('<div><span>'+data.user+':</span>'+data.msg+'</div>');
                 }
@@ -53,7 +53,7 @@
                     myname = prompt("yourname");
                     socket.emit('addme', myname);
                 }
-                socket.emit('msg', { 
+                socket.emit('msg', {
                     msg:    $('input[type=text]').val(),
                     user:   myname
                 });

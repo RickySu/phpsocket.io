@@ -12,7 +12,10 @@ $socketio = new SocketIO();
 $chat = $socketio
         ->getSockets()
         ->on('addme', function(Event\MessageEvent $messageEvent) use (&$chat) {
-            $messageEvent->getConnection()->emit('update', array('msg' => "Welcome {$messageEvent->getMessage()}"));
+            $messageEvent->getConnection()->emit(
+                    'update',
+                    array('msg' => "Welcome {$messageEvent->getMessage()}")
+            );
             $chat->emit('update', array('msg' => "{$messageEvent->getMessage()} is coming."));
         })
         ->on('msg', function(Event\MessageEvent $messageEvent) use (&$chat) {
