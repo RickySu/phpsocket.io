@@ -156,7 +156,7 @@ class Connection implements ConnectionInterface
     protected function getEventBufferEvent()
     {
         if (!$this->eventBufferEvent) {
-            $this->eventBufferEvent = $this->eventHTTPRequest->getEventBufferEvent();
+            $this->eventBufferEvent = $this->eventHTTPRequest->getBufferEvent();
             $this->eventBufferEvent->setCallbacks(function(){
                 $data  = $this->eventBufferEvent->read(4096);
                 $dispatcher = Event\EventDispatcher::getDispatcher();
@@ -199,7 +199,7 @@ class Connection implements ConnectionInterface
     public function getRemote()
     {
         if (!$this->remote && $this->eventHTTPRequest) {
-            $this->eventHTTPRequest->getEventHttpConnection()->getPeer($address, $port);
+            $this->eventHTTPRequest->getConnection()->getPeer($address, $port);
             $this->remote = array($address, $port);
         }
 

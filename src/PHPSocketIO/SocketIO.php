@@ -106,7 +106,7 @@ class SocketIO
                 $this->requests[]=$request;
                 $this->baseEvent->stop();
             });
-            $request->getEventHttpConnection()->getPeer($address, $port);
+            $request->getConnection()->getPeer($address, $port);
             $connection->parseHTTP($request);
             call_user_func($this->onConnectCallback, $connection);
         });
