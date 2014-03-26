@@ -35,7 +35,7 @@ class WebSocket
     {
         $key = $request->headers->get('Sec-WebSocket-Key');
         if(
-                $request->headers->get('Upgrade') != 'websocket' ||
+                strtolower($request->headers->get('Upgrade')) != 'websocket' ||
                 !$this->checkProtocolVrsion($request) ||
                 !$this->checkSecKey($key)
           ){
