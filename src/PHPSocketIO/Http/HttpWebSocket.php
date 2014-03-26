@@ -4,6 +4,7 @@ namespace PHPSocketIO\Http;
 
 use PHPSocketIO\ConnectionInterface;
 use PHPSocketIO\Request\Request;
+use PHPSocketIO\Response\Response;
 use PHPSocketIO\Protocol\Builder as ProtocolBuilder;
 use PHPSocketIO\Event;
 use PHPSocketIO\Response\ResponseWebSocketFrame;
@@ -61,7 +62,6 @@ class HttpWebSocket
         $this->websocket = new WebSocket\WebSocket();
         if (!($handshakeResponse = $this->websocket->getHandshakeReponse($request))) {
             $this->getConnection()->write(new Response('bad protocol', 400), true);
-
             return;
         }
         $this->getConnection()->write($handshakeResponse);
